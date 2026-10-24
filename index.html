@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>The Knight — 3D Character Reference &amp; GPU Fur Simulation</title>
+  <meta name="description" content="Interactive 3D character reference sheet of the Knight from Hollow Knight with multi-angle turnaround views, GPU micro-fur shaders, soft-body cloak physics, and particle simulation." />
+  <meta property="og:title" content="The Knight — 3D Character Reference &amp; GPU Fur Simulation" />
+  <meta property="og:description" content="Interactive 3D character reference sheet of the Knight from Hollow Knight with multi-angle turnaround views, GPU micro-fur shaders, soft-body cloak physics, and particle simulation." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <nav id="page-nav" aria-label="View and Render Mode Switcher"></nav>
+  <nav id="scene-nav" class="scene-nav-bar" aria-label="Scene Selection"></nav>
+  <div id="turnaround-overlay" class="turnaround-overlay" aria-hidden="true"></div>
+  <div id="canvas-container" aria-label="Interactive 3D Character Turnaround and GPU Fur Simulation"></div>
+  <aside id="ui-root" aria-label="Fur, Cloth, and Studio Lighting Controls"></aside>
+  <div id="hud-hint" aria-live="polite"></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

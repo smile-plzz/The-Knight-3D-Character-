@@ -1,0 +1,8 @@
+{
+  "name": "The Knight — 3D Character Reference & GPU Fur Simulation",
+  "description": "Interactive 3D character reference sheet of the Knight from Hollow Knight with multi-angle turnaround views, GPU micro-fur shaders, soft-body cloak physics, and particle simulation.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}
