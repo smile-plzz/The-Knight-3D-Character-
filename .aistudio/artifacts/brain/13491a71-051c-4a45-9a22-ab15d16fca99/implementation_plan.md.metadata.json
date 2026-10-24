@@ -1,0 +1,6 @@
+{
+  "summary":  "Implementation plan for fixing the runtime rendering bug, unifying the 10-character Hollow Knight roster schema (Knight, Hollow Knight, Hornet, Quirrel, Cloth, Grimm, Pale King, Radiance, Zote, Cornifer), and optimizing performance with strand count controls.",
+  "updatedAt":  "2026-10-24T15:22:37.200276466Z",
+  "requestFeedback":  true,
+  "userFacing":  true
+}
