@@ -9,6 +9,10 @@ function smoothstep(edge0, edge1, x) {
   return t * t * (3.0 - 2.0 * t);
 }
 
+function safePow(base, exp) {
+  return Math.pow(Math.max(0.0, base), exp);
+}
+
 /**
  * Evaluates follicle density and length weight across all 4 anatomical zones:
  * Zone 1.0 = Hard Chitin Shell / Mask / Crown: subtle micro-fiber rim fuzz along outer contours (0.14 .. 0.34).
@@ -275,6 +279,25 @@ function buildMaskAndHorns(characterId) {
       x *= 0.96;
       y *= 0.95;
       z *= 0.88;
+    } else if (characterId === 'zote_the_mighty') {
+      // Zote the Mighty: Squat, grumpy mask with downturned mouth furrow
+      const normY = y / 0.35;
+      const jawTaper = normY < 0.0 ? 0.94 + 0.12 * (1.0 + normY) : 0.98;
+      x *= 1.12 * jawTaper;
+      y *= 0.88;
+      z *= 0.84;
+      if (z > 0.12 && y < -0.06 && y > -0.16 && Math.abs(x) < 0.12) {
+        z -= 0.025 * (1.0 - Math.abs(x) / 0.12);
+      }
+    } else if (characterId === 'cornifer') {
+      // Cornifer: Plump rounded weevil mask with curving snout trunk
+      x *= 1.14;
+      y *= 0.96;
+      z *= 1.02;
+      if (z > 0.08 && y < 0.04) {
+        const trunkT = smoothstep(0.04, -0.32, y);
+        z += trunkT * 0.16 * (1.0 - Math.min(1.0, Math.abs(x) * 4.0));
+      }
     } else {
       // The Knight: Iconic rounded-trapezoid Vessel mask
       const normY = y / 0.35;
@@ -282,7 +305,7 @@ function buildMaskAndHorns(characterId) {
       x *= 1.08 * jawTaper;
       y *= 0.94;
       z *= 0.88;
-      if (z > 0.0) z = Math.pow(z / 0.308, 0.84) * 0.31;
+      if (z > 0.0) z = safePow(z / 0.308, 0.84) * 0.31;
     }
 
     // Concave eye-socket depressions on the front face
@@ -311,18 +334,18 @@ function buildMaskAndHorns(characterId) {
         let hx = hp.getX(i);
         let hy = hp.getY(i);
         let hz = hp.getZ(i);
-        const t = (hy + 0.28) / 0.56;
+        const t = Math.max(0.0, Math.min(1.0, (hy + 0.28) / 0.56));
         const archX =
           side *
-          (0.185 + Math.sin(t * Math.PI * 0.76) * 0.135 - Math.pow(t, 2.5) * 0.11);
+          (0.185 + Math.sin(t * Math.PI * 0.76) * 0.135 - safePow(t, 2.5) * 0.11);
         const archY = 0.68 + t * 0.50;
-        const archZ = -0.02 - Math.pow(t, 1.6) * 0.075;
+        const archZ = -0.02 - safePow(t, 1.6) * 0.075;
         const innerSide = hx * side < 0;
-        const notchWindow = Math.exp(-Math.pow((t - 0.77) / 0.08, 2.0));
+        const notchWindow = Math.exp(-safePow((t - 0.77) / 0.08, 2.0));
         if (innerSide && t > 0.62) {
           hx += side * notchWindow * 0.022;
         }
-        const radiusScale = 1.0 - 0.25 * Math.pow(t, 1.8);
+        const radiusScale = 1.0 - 0.25 * safePow(t, 1.8);
         hp.setXYZ(i, hx * radiusScale + archX, archY, hz * 0.85 * radiusScale + archZ);
       }
       parts.push(tagZoneAndAttributes(hornGeom, 1.0));
@@ -336,9 +359,9 @@ function buildMaskAndHorns(characterId) {
         let hx = hp.getX(i);
         let hy = hp.getY(i);
         let hz = hp.getZ(i);
-        const t = (hy + 0.43) / 0.86;
+        const t = Math.max(0.0, Math.min(1.0, (hy + 0.43) / 0.86));
         const archX =
-          side * (0.16 + t * 0.28 - Math.pow(t, 2.6) * 0.14);
+          side * (0.16 + t * 0.28 - safePow(t, 2.6) * 0.14);
         const archY = 0.72 + t * 0.76;
         const archZ = -0.02 - t * 0.14;
         // 3 serrated notches on inner face
@@ -346,7 +369,7 @@ function buildMaskAndHorns(characterId) {
           const serration = Math.sin(t * Math.PI * 7.0);
           if (serration > 0.2) hx += side * serration * 0.026;
         }
-        const scale = 1.0 - 0.35 * Math.pow(t, 1.5);
+        const scale = 1.0 - 0.35 * safePow(t, 1.5);
         hp.setXYZ(i, hx * scale + archX, archY, hz * 0.82 * scale + archZ);
       }
       parts.push(tagZoneAndAttributes(hornGeom, 1.0));
@@ -360,11 +383,11 @@ function buildMaskAndHorns(characterId) {
         let hx = hp.getX(i);
         let hy = hp.getY(i);
         let hz = hp.getZ(i);
-        const t = (hy + 0.38) / 0.76;
-        const archX = side * (0.14 + t * 0.19 - Math.pow(t, 2.2) * 0.05);
+        const t = Math.max(0.0, Math.min(1.0, (hy + 0.38) / 0.76));
+        const archX = side * (0.14 + t * 0.19 - safePow(t, 2.2) * 0.05);
         const archY = 0.68 + t * 0.68;
-        const archZ = -0.01 - Math.pow(t, 1.4) * 0.12;
-        const scale = 1.0 - 0.45 * Math.pow(t, 1.4);
+        const archZ = -0.01 - safePow(t, 1.4) * 0.12;
+        const scale = 1.0 - 0.45 * safePow(t, 1.4);
         hp.setXYZ(i, hx * scale + archX, archY, hz * 0.8 * scale + archZ);
       }
       parts.push(tagZoneAndAttributes(hornGeom, 1.0));
@@ -378,7 +401,7 @@ function buildMaskAndHorns(characterId) {
         const kx = kp.getX(i);
         const ky = kp.getY(i);
         const kz = kp.getZ(i);
-        const t = (ky + 0.15) / 0.30;
+        const t = Math.max(0.0, Math.min(1.0, (ky + 0.15) / 0.30));
         kp.setXYZ(
           i,
           kx + side * (0.20 + t * 0.08),
@@ -397,10 +420,10 @@ function buildMaskAndHorns(characterId) {
         const hx = hp.getX(i);
         const hy = hp.getY(i);
         const hz = hp.getZ(i);
-        const t = (hy + 0.32) / 0.64;
+        const t = Math.max(0.0, Math.min(1.0, (hy + 0.32) / 0.64));
         const archX = side * (0.14 + Math.sin(t * Math.PI * 0.65) * 0.16);
         const archY = 0.72 + t * 0.54;
-        const archZ = -0.02 - Math.pow(t, 1.5) * 0.11;
+        const archZ = -0.02 - safePow(t, 1.5) * 0.11;
         const scale = 1.0 - 0.35 * t;
         hp.setXYZ(i, hx * scale + archX, archY, hz * scale + archZ);
       }
@@ -419,7 +442,7 @@ function buildMaskAndHorns(characterId) {
         const px = pp.getX(i);
         const py = pp.getY(i);
         const pz = pp.getZ(i);
-        const t = (py + height * 0.5) / height;
+        const t = Math.max(0.0, Math.min(1.0, (py + height * 0.5) / height));
         const flareX = cx * (1.0 + t * 0.22);
         pp.setXYZ(i, px + flareX, 0.74 + t * height, pz * 0.75 + 0.02);
       }
@@ -435,14 +458,50 @@ function buildMaskAndHorns(characterId) {
         const hx = hp.getX(i);
         const hy = hp.getY(i);
         const hz = hp.getZ(i);
-        const t = (hy + hLen * 0.5) / hLen;
+        const t = Math.max(0.0, Math.min(1.0, (hy + hLen * 0.5) / hLen));
         const archX =
           side === 0
             ? 0
-            : side * (0.18 + Math.sin(t * Math.PI * 0.82) * 0.14 - Math.pow(t, 2.2) * 0.09);
+            : side * (0.18 + Math.sin(t * Math.PI * 0.82) * 0.14 - safePow(t, 2.2) * 0.09);
         const archY = 0.72 + t * hLen;
         const scale = 1.0 - 0.45 * t;
         hp.setXYZ(i, hx * scale + archX, archY, hz * scale);
+      }
+      parts.push(tagZoneAndAttributes(hornGeom, 1.0));
+    }
+  } else if (characterId === 'zote_the_mighty') {
+    // Zote: Two awkward, crooked, lopsided horns (left horn curved in, right horn broken & blunt)
+    for (const side of [-1, 1]) {
+      const hLen = side === -1 ? 0.52 : 0.36;
+      const hornGeom = new THREE.CylinderGeometry(0.018, 0.082, hLen, 20, 24, false);
+      const hp = hornGeom.attributes.position;
+      for (let i = 0; i < hp.count; i++) {
+        let hx = hp.getX(i);
+        let hy = hp.getY(i);
+        let hz = hp.getZ(i);
+        const t = (hy + hLen * 0.5) / hLen;
+        const archX = side * (0.16 + t * (side === -1 ? 0.12 : 0.04));
+        const archY = 0.68 + t * (hLen * 0.85);
+        const archZ = -0.02 + (side === -1 ? -t * 0.08 : t * 0.03);
+        const scale = 1.0 - (side === -1 ? 0.35 * t : 0.55 * t);
+        hp.setXYZ(i, hx * scale + archX, archY, hz * scale + archZ);
+      }
+      parts.push(tagZoneAndAttributes(hornGeom, 1.0));
+    }
+  } else if (characterId === 'cornifer') {
+    // Cornifer: Gentle curving weevil antennae horns with rounded tips
+    for (const side of [-1, 1]) {
+      const hornGeom = new THREE.CylinderGeometry(0.012, 0.045, 0.38, 16, 20, false);
+      const hp = hornGeom.attributes.position;
+      for (let i = 0; i < hp.count; i++) {
+        let hx = hp.getX(i);
+        let hy = hp.getY(i);
+        let hz = hp.getZ(i);
+        const t = (hy + 0.19) / 0.38;
+        const archX = side * (0.16 + Math.sin(t * Math.PI * 0.7) * 0.12);
+        const archY = 0.72 + t * 0.32;
+        const archZ = 0.02 + t * 0.06;
+        hp.setXYZ(i, hx + archX, archY, hz + archZ);
       }
       parts.push(tagZoneAndAttributes(hornGeom, 1.0));
     }
@@ -510,6 +569,20 @@ function buildCloakGeometry(characterId) {
     height = 0.96;
     yCenter = -0.20;
     pleatCount = 10.0;
+  } else if (characterId === 'zote_the_mighty') {
+    // Stiff, awkward, wrinkled traveler cloak
+    topR = 0.22;
+    botR = 0.52;
+    height = 0.70;
+    yCenter = -0.16;
+    pleatCount = 6.0;
+  } else if (characterId === 'cornifer') {
+    // Plump, rounded felt traveler poncho cape
+    topR = 0.26;
+    botR = 0.65;
+    height = 0.80;
+    yCenter = -0.16;
+    pleatCount = 8.0;
   }
 
   const cloakGeom = new THREE.CylinderGeometry(topR, botR, height, 72, 40, false);
@@ -520,19 +593,19 @@ function buildCloakGeometry(characterId) {
     let cy = cp.getY(i);
     let cz = cp.getZ(i);
 
-    const t = (height * 0.5 - cy) / height; // 0 at collar, 1 at hem
+    const t = Math.max(0.0, Math.min(1.0, (height * 0.5 - cy) / height)); // 0 at collar, 1 at hem
     const az = Math.atan2(cx, cz);
 
     // Fluted vertical pleats
     const pleatWave =
-      Math.sin(az * pleatCount) * 0.048 * Math.pow(t, 0.85) +
-      Math.cos(az * (pleatCount * 2.0 - 1.0)) * 0.022 * Math.pow(t, 1.3);
+      Math.sin(az * pleatCount) * 0.048 * safePow(t, 0.85) +
+      Math.cos(az * (pleatCount * 2.0 - 1.0)) * 0.022 * safePow(t, 1.3);
 
-    let rScale = 1.0 + pleatWave + 0.14 * Math.pow(t, 1.6);
+    let rScale = 1.0 + pleatWave + 0.14 * safePow(t, 1.6);
 
     if (characterId === 'hornet') {
       // Crisp bell flare with minimal raggedness
-      rScale = 1.0 + Math.sin(az * pleatCount) * 0.042 * t + 0.22 * Math.pow(t, 1.35);
+      rScale = 1.0 + Math.sin(az * pleatCount) * 0.042 * t + 0.22 * safePow(t, 1.35);
     } else if (characterId === 'the_radiance') {
       // Wing-like lateral span (wider along X, swept back along Z)
       cx *= 1.28;
@@ -599,7 +672,14 @@ function buildBodyAndLimbs(characterId) {
   }
 
   // Torso core
-  const torsoRadius = characterId === 'cloth' ? 0.25 : 0.16;
+  const torsoRadius =
+    characterId === 'cloth'
+      ? 0.25
+      : characterId === 'cornifer'
+      ? 0.28
+      : characterId === 'zote_the_mighty'
+      ? 0.18
+      : 0.16;
   const torsoGeom = new THREE.CylinderGeometry(
     torsoRadius * 0.85,
     torsoRadius,
@@ -614,8 +694,20 @@ function buildBodyAndLimbs(characterId) {
   parts.push(tagZoneAndAttributes(torsoGeom, 3.0));
 
   // Legs
-  const legSpread = characterId === 'cloth' ? 0.14 : 0.095;
-  const legRadius = characterId === 'cloth' ? 0.062 : 0.036;
+  const legSpread =
+    characterId === 'cloth'
+      ? 0.14
+      : characterId === 'cornifer'
+      ? 0.15
+      : 0.095;
+  const legRadius =
+    characterId === 'cloth'
+      ? 0.062
+      : characterId === 'cornifer'
+      ? 0.055
+      : characterId === 'zote_the_mighty'
+      ? 0.038
+      : 0.036;
   for (const side of [-1, 1]) {
     const legGeom = new THREE.CylinderGeometry(legRadius, legRadius * 0.58, 0.56, 18, 18);
     const lp = legGeom.attributes.position;
@@ -696,9 +788,7 @@ function buildCoreAndSpecialZone(characterId) {
     parts.push(tagZoneAndAttributes(broochGeom, 4.0));
   } else if (characterId === 'the_pale_king') {
     // Luminous King's Brand royal chest seal
-    const sealGeom = new THREE.TorusknotGeometry
-      ? new THREE.TorusGeometry(0.11, 0.022, 16, 36)
-      : new THREE.TorusGeometry(0.11, 0.022, 16, 36);
+    const sealGeom = new THREE.TorusGeometry(0.11, 0.022, 16, 36);
     const sp = sealGeom.attributes.position;
     for (let i = 0; i < sp.count; i++) {
       sp.setXYZ(i, sp.getX(i), sp.getY(i) + 0.04, sp.getZ(i) + 0.24);
@@ -712,6 +802,23 @@ function buildCoreAndSpecialZone(characterId) {
       sp.setXYZ(i, sp.getX(i), sp.getY(i) + 0.10, sp.getZ(i) + 0.28);
     }
     parts.push(tagZoneAndAttributes(sunCore, 4.0));
+  } else if (characterId === 'cornifer') {
+    // Cornifer: Cylindrical backpack roll of parchment maps strapped to back
+    const packGeom = new THREE.CylinderGeometry(0.12, 0.12, 0.58, 20, 16);
+    packGeom.rotateZ(Math.PI / 2);
+    const pp = packGeom.attributes.position;
+    for (let i = 0; i < pp.count; i++) {
+      pp.setXYZ(i, pp.getX(i), pp.getY(i) + 0.08, pp.getZ(i) - 0.28);
+    }
+    parts.push(tagZoneAndAttributes(packGeom, 4.0));
+  } else if (characterId === 'zote_the_mighty') {
+    // Zote: Clumsy shellwood shoulder buckle
+    const claspGeom = new THREE.BoxGeometry(0.08, 0.08, 0.04);
+    const cp = claspGeom.attributes.position;
+    for (let i = 0; i < cp.count; i++) {
+      cp.setXYZ(i, cp.getX(i) + 0.08, cp.getY(i) + 0.12, cp.getZ(i) + 0.22);
+    }
+    parts.push(tagZoneAndAttributes(claspGeom, 4.0));
   }
 
   return parts;
@@ -913,6 +1020,51 @@ function populateWeaponForCharacter(weaponGroup, characterId, accentColor) {
     runeMaterials.push(swordMat);
     weaponGroup.position.set(0.0, 0.24, -0.26);
     weaponGroup.rotation.set(0, 0, 0);
+  } else if (characterId === 'zote_the_mighty') {
+    // Zote's Life Ender: Rough-hewn wooden shellwood sword incapable of cutting
+    const woodMat = new THREE.MeshStandardMaterial({
+      color: 0x854d0e,
+      roughness: 0.88,
+      metalness: 0.04
+    });
+    const woodBlade = new THREE.Mesh(new THREE.BoxGeometry(0.09, 0.82, 0.038), woodMat);
+    woodBlade.position.y = 0.15;
+    weaponGroup.add(woodBlade);
+
+    const crossguard = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.04, 0.05), woodMat);
+    crossguard.position.y = -0.25;
+    weaponGroup.add(crossguard);
+
+    const hilt = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.018, 0.018, 0.20, 10),
+      new THREE.MeshStandardMaterial({ color: 0x451a03, roughness: 0.9 })
+    );
+    hilt.position.y = -0.37;
+    weaponGroup.add(hilt);
+
+    weaponGroup.position.set(0.36, -0.16, 0.18);
+    weaponGroup.rotation.set(0.25, -0.20, -0.45);
+  } else if (characterId === 'cornifer') {
+    // Cornifer: Rolled Map Bundle & Goose Feather Quill
+    const scrollMat = new THREE.MeshStandardMaterial({
+      color: 0xfef3c7,
+      roughness: 0.75,
+      metalness: 0.05
+    });
+    const scrollMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.65, 16), scrollMat);
+    scrollMesh.rotation.z = -0.35;
+    scrollMesh.position.set(0.05, 0.05, 0.0);
+    weaponGroup.add(scrollMesh);
+
+    const quillMat = new THREE.MeshBasicMaterial({ color: 0x38bdf8 });
+    const quill = new THREE.Mesh(new THREE.ConeGeometry(0.024, 0.42, 4), quillMat);
+    quill.position.set(0.18, 0.18, 0.05);
+    quill.rotation.z = -0.75;
+    weaponGroup.add(quill);
+    runeMaterials.push(quillMat);
+
+    weaponGroup.position.set(0.38, -0.18, 0.18);
+    weaponGroup.rotation.set(0.15, -0.12, -0.25);
   } else {
     // The Knight (Pure Nail), The Hollow Knight (Corrupted Greatnail), or Quirrel (Curved Nail)
     const isHK = characterId === 'the_hollow_knight';

@@ -4,75 +4,70 @@ A robust, production-grade WebGL/Three.js interactive character reference and gr
 
 ---
 
-### User Review & Critical Decisions
+### Issues Resolved & Decisions Implemented
 
-> [!IMPORTANT]
-> The following decisions were clarified and confirmed during the intake interview:
+> [!NOTE]
+> All blocking runtime exceptions and roster discrepancies have been diagnosed, resolved, and verified:
 
-- **Confirmed Decision 1 (10-Character Roster)**: We will include all 10 canonical characters in the application roster (Keys `1` through `0`):
-  1. `the_knight`: The Knight (Vessel of the Abyss, Pure Nail)
-  2. `the_hollow_knight`: The Hollow Knight / Pure Vessel (Corrupted Greatnail, SSS Infection Sacs)
-  3. `hornet`: Hornet (Needle & Silk Thread, crimson cloak)
-  4. `quirrel`: Quirrel (Curved Explorer's Nail, Monomon's Mask)
-  5. `cloth`: Cloth (Prickly Great-Club, Cicada warrior hood)
-  6. `grimm`: Troupe Master Grimm (Scarlet Nightmare Flame Orbs, bat-wing cloak)
-  7. `the_pale_king`: The Pale King (Pale Court Sigil Halo, Wyrm Crown-Mask, monarch robes)
-  8. `the_radiance`: The Radiance (Halo of Dream Swords, moth fur mane, light-feather wings)
-  9. `zote_the_mighty`: Zote the Mighty (Life Ender shellwood sword, lopsided horned mask)
-  10. `cornifer`: Cornifer the Cartographer (Map bundle & quill, weevil mask, traveler's cloak)
+1. **Fixed `createEnvironmentManager` Calling Convention Bug**:
+   - *Cause*: `src/environments.js` was expecting an options object `{ scene, renderer, ... }`, but was called in `src/main.js` with positional arguments `(scene, camera, renderer)`. Consequently, `scene` was `undefined`, throwing `TypeError: Cannot read properties of undefined (reading 'add')` when creating the studio environment.
+   - *Fix*: `createEnvironmentManager` now natively supports both positional arguments `(scene, camera, renderer)` and options objects `{ scene, renderer, container, ... }` with safe fallbacks for all light handles and uniform structures (`furUniforms`).
 
-- **Confirmed Decision 2 (Pipeline Scope)**: The application will operate as a focused, high-performance browser-based 3D reference and groom look-development workstation (with real-time JSON pipeline viewer and clipboard copy), without external 3D DCC mesh/groom file export.
+2. **Fixed `TorusknotGeometry` Syntax Error**:
+   - *Cause*: In `src/blobCreature.js`, an expression `new THREE.TorusknotGeometry ? ...` threw `TypeError: THREE.TorusknotGeometry is not a constructor` when loading The Pale King.
+   - *Fix*: Replaced with `new THREE.TorusGeometry(0.11, 0.022, 16, 36)`.
 
-- **Confirmed Root Cause & Fix (Runtime Crash)**: In `src/characterSpecs.js`, characters like The Pale King and The Radiance used non-standard nested keys (`head_crown`, `attire`, `wings_and_fur`) rather than the uniform `head_mask` and `body_and_attire` structure. Accessing `spec.body_and_attire.cloak` threw unhandled `TypeError` exceptions in `src/ui.js` that crashed execution. We will standardize the schema across all 10 characters with defensive safe navigation (`spec?.body_and_attire?.cloak ?? ...`).
+3. **Unified 10-Character Canonical Roster (Keys `1`–`9`, `0`)**:
+   - Fully standardized schemas and sculpted geometry for all 10 characters:
+     1. `the_knight`: The Knight (Vessel of the Abyss, Pure Nail)
+     2. `the_hollow_knight`: The Hollow Knight / Pure Vessel (Corrupted Greatnail, SSS Infection Sacs)
+     3. `hornet`: Hornet (Needle & Silk Thread, crimson cloak)
+     4. `quirrel`: Quirrel (Curved Explorer's Nail, Monomon's Mask)
+     5. `cloth`: Cloth (Prickly Great-Club, cicada warrior hood)
+     6. `grimm`: Troupe Master Grimm (Scarlet Nightmare Flame Orbs, bat-wing cloak)
+     7. `the_pale_king`: The Pale King (Pale Court Sigil Halo, Wyrm Crown-Mask, monarch robes)
+     8. `the_radiance`: The Radiance (Halo of Dream Swords, moth fur mane, light-feather wings)
+     9. `zote_the_mighty`: Zote the Mighty (Life Ender shellwood sword, lopsided horned mask)
+     10. `cornifer`: Cornifer the Cartographer (Map bundle & quill, weevil mask, traveler's cloak)
 
----
+4. **Defensive UI Hardening**:
+   - Replaced fragile direct property lookups in `src/ui.js` with optional chaining (`spec?.body_and_attire?.cloak?.material`) to prevent uncaught runtime errors during character transitions.
 
-## 1. Overview & Core Concept
+5. **Fixed `Cannot read properties of undefined (reading 'position')` in Environment Update Loop**:
+   - *Cause*: `envManager.update` was invoked with `(dt, elapsed)` missing the 3rd parameter `creatureRoot`, causing `creatureRoot.position.y` to throw a `TypeError`.
+   - *Fix*: Made `creatureRoot` parameter optional with fallback coordinates (`creatureRoot?.position || { x: 0, y: 0, z: 0 }`), and updated call in `src/main.js` to pass `(elapsed, simState.windStrength, creature.root)`.
 
-- **What It Does**: Renders an interactive 3D character turnaround sheet (simultaneous Front `0°`, Hero Three-Quarter `-36°`, and Side Profile `90°`) or single free-orbit view on a neutral dark-gray studio backdrop. Features 60,000 GPU-instanced fur/velvet fibers, soft-body cloth physics, Marschner hair shading, and multi-channel technical inspection passes.
-- **Target Audience**: Technical artists, 3D character modelers, groom artists, and Hollow Knight lore enthusiasts looking for precise material zoning, silhouette, and simulation reference.
-- **Key Value**: Instantaneous switching between 10 characters with true-to-lore geometry, reactive physics, and interactive inspection tools (Groom Brush, Wind Vortex, Lore Action, Light Wand, and X-Ray Shader Lens).
+6. **Implemented `gpuPhysics.reset` and `getTexture`**:
+   - *Cause*: `src/main.js` called `gpuPhysics.reset()` on character change and groom reset, but `createGPUFurPhysics` did not expose a `reset()` method.
+   - *Fix*: Added `reset()`, `getTexture()`, and `supported` getter to `createGPUFurPhysics` in `src/gpuPhysics.js`, and added defensive type checks before invocations.
 
----
+7. **Eliminated `computeBoundingSphere() Computed radius is NaN` across Geometries**:
+   - *Cause*: Cylinder, cone, and pleating formulas computed `Math.pow(t, exponent)` with non-integer exponents (e.g. 2.5, 1.6, 0.85) where floating point boundary coordinates slightly exceeded bounds, causing `Math.pow(negativeNumber, nonInt)` to return `NaN`.
+   - *Fix*: Added `safePow(base, exp) = Math.pow(Math.max(0.0, base), exp)` and clamped `t = Math.max(0.0, Math.min(1.0, ...))` across all 10 character sculpts in `src/blobCreature.js`, eliminating `NaN` coordinates and ensuring valid bounding spheres.
 
-## 2. User Experience & Visual Design
+8. **Dynamic Performance & Strand Count Scaling**:
+   - Added dynamic instanced buffer count scaling in `src/furSystem.js` tied to `furDensity`, allowing real-time adjustment of active strand counts (60,000 down to 9,000) for sustained 60 FPS performance on any hardware.
 
-- **Key User Flows**:
-  1. **Character Exploration**: User taps keys `1`–`9` or `0` (or clicks the bottom roster cards) to swap characters. The base geometry, material zones, particle effects, and weapon models instantaneously rebuild without stutter.
-  2. **View Angle Switch**: User toggles between the 3-View Turnaround Reference Sheet and focused Full-Viewport views (`Three-Quarter`, `Front`, `Side`).
-  3. **Interactive Toolbelt**:
-     - `Q` — Groom Brush: Interactively combs and parts fur fibers.
-     - `W` — Wind Vortex: Generates dynamic swirling wind to billow soft-body cloth and moth wings.
-     - `E` / `Space` — Signature Lore Action: Triggers unique character animations and shockwaves.
-     - `R` — Light Wand: Drags a 3D dual-spectrum point light for SSS and rim specular inspection.
-     - `T` — X-Ray Shader Lens: Magnifies internal passes (Groom Weight, Carapace Displacement, SSS, or Topology).
-  4. **Material Zone Highlighting**: Hovering/clicking on any of the 4 anatomical zones isolates and pulses that region on the 3D model.
-  5. **Performance / Quality Control**: Adds an interactive strand-count / quality toggle (Ultra 60k, High 30k, Performance 12k) so the sim runs at a steady 60 FPS on any hardware.
-
-- **Visual Identity & Theme**:
-  - *Aesthetic*: Minimalist, technical dark-mode studio cyclorama inspired by UE5 LookDev viewports and dark fantasy Hallownest aesthetics.
-  - *Color Palette*: Deep studio obsidian (`#090c12`), dark slate cards (`rgba(13, 16, 24, 0.94)`), Hallownest Soul-blue accents (`#38bdf8`, `#7dd3fc`), and character-specific accent tags.
-  - *Typography*: Google Sans / Plus Jakarta Sans for UI text, Cinzel for character titles, and JetBrains Mono for technical telemetry and shader coordinates.
-
----
-
-## 3. Key Product Decisions & Trade-Offs
-
-- **Decision 1: Schema Normalization & Defensive Safe Accessors**
-  - *Chosen Approach*: Standardize all 10 character entries in `src/characterSpecs.js` to strictly provide `head_mask`, `body_and_attire`, and `weapon`/`props` objects with uniform fields. Add fallback optional-chaining in `src/ui.js` (`spec?.head_mask?.material || 'Matte Carapace'`).
-  - *Why*: Eliminates `TypeError` exceptions during character selection and ensures the live JSON viewer output conforms to the structured JSON specification.
-
-- **Decision 2: Procedural Geometry for Zote and Cornifer**
-  - *Chosen Approach*: Implement distinctive 3D procedural sculpts for Zote the Mighty (dull grey chipped mask, clumsy uneven horns, dingy purple-brown cloak, wooden Life Ender sword) and Cornifer (warm amber weevil mask with curved proboscis trunk and spectacles, plump velvet body, green-brown traveler's cloak, and map bundle/quill).
-  - *Why*: Delivers all 10 characters with authentic, visually distinct silhouettes matching Hollow Knight Wiki reference art.
-
-- **Decision 3: Scalable Strand Count & Quality Level**
-  - *Chosen Approach*: Expose a strand density/count slider and quality presets (`Ultra: 60k`, `High: 30k`, `Medium: 15k`) in the inspector.
-  - *Why*: Solves potential frame drops on lower-powered devices without diminishing visual fidelity on high-end GPUs.
+9. **Implemented `gpuPhysics.update` for Per-Frame Physics Simulation**:
+   - *Cause*: `src/main.js` called `gpuPhysics.update(dt, elapsed, { ... })` during each frame of the render loop, but `src/gpuPhysics.js` only exposed `step`.
+   - *Fix*: Implemented `update(dt, time, options)` in `src/gpuPhysics.js` with full backward compatibility (handling both object and positional signatures, inertia fallbacks, and shockwave propagation), exported it, and added defensive existence guards in `src/main.js`.
+10. **Decluttering, Modern Minimal Redesign & Viewport Maximization**:
+   - **Ultra-Clean Header Bar (`#studio-header`)**: Replaced multiple rows of buttons with a unified modern pill containing:
+     - Left: Branding with live selected character badge (`HALLOWNEST / The Knight`).
+     - Center: Camera angle segmented control (*3/4 Hero*, *Front*, *Side*, *Free Orbit*, *3-View Sheet*).
+     - Right: Floating dropdown menus for Lighting (*Studio*, *Twilight*, *Sanctum*, *Abyss*) and Render Passes (*Beauty*, *Groom*, *Displacement*, *SSS*, *Topology*), a quick Action burst button (`Space`), and a Controls inspector toggle (`I`).
+   - **Single Sleek Floating Dock (`.studio-dock`)**: Replaced the previous bulky two-story card stack with a single 40px capsule containing:
+     - 5 cursor tools (*Groom*, *Wind*, *Action*, *Light*, *X-Ray* with keycaps `Q`, `W`, `E`, `R`, `T`).
+     - Dynamic X-Ray map chips only visible when X-Ray tool is active.
+     - 10 canonical Hollow Knight characters (`1`–`9`, `0`) with individual color accent beads.
+   - **Unobstructed 3D Interaction Viewport**:
+     - Defaults to **3/4 Hero** with active OrbitControls so users can freely orbit, drag, and zoom in 3D right away.
+     - Controls sidebar (`#ui-root`) is tucked away as a clean slide-out drawer (`drawer-hidden` by default) toggled with `I` or the Controls button.
+     - Keyboard shortcut guide moved to a subtle bottom-left pill that fades out cleanly.
 
 ---
 
-## 4. Technical Architecture & Data Strategy
+## Technical Architecture & State Flow
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
@@ -95,15 +90,8 @@ A robust, production-grade WebGL/Three.js interactive character reference and gr
 ┌───────────────┐   ┌───────────────┐         ┌───────────────┐   ┌───────────┐
 │ blobCreature  │   │   furSystem   │         │characterSpecs │   │environments│
 │ - 10 Chars    │   │ - 64 Shells   │         │ - 10 Schemas  │   │ - Studio  │
-│ - Mask/Horns  │   │ - 60k Strands │         │ - Wiki Quotes │   │ - Three-  │
-│ - Cloaks/Wings│   │ - BSDF Shaders│         │ - Sim Presets │   │   Point   │
-│ - Props/Weapons│  │ - X-Ray Lens  │         │ - Live Synced │   │   Rig     │
+│ - Mask/Horns  │   │ - Scalable    │         │ - Wiki Quotes │   │ - Three-  │
+│ - Cloaks/Wings│   │   Strands     │         │ - Sim Presets │   │   Point   │
+│ - Props/Weapons│  │ - BSDF Shaders│         │ - Live Synced │   │   Rig     │
 └───────────────┘   └───────────────┘         └───────────────┘   └───────────┘
 ```
-
-### Execution Steps
-1. **Schema Standardization (`src/characterSpecs.js`)**: Format all 10 characters with consistent `head_mask`, `body_and_attire`, and `weapon` schemas, including complete wiki quotes and calibrated presets.
-2. **Defensive UI Hardening (`src/ui.js`)**: Update `renderAnatomyZoneCards` and `updateCharacterPresentation` to safely navigate all character structures with fallbacks and support hotkeys `1` through `0`.
-3. **Procedural Rigs for Zote & Cornifer (`src/blobCreature.js`)**: Add geometry generation, mask contours, cloaks, and weapons for Zote and Cornifer.
-4. **Strand Count & Quality Control (`src/furSystem.js` & `src/ui.js`)**: Allow dynamic adjustment of active strand counts for scalable performance.
-5. **Verification & Smoke-Testing**: Recompile, run unit/smoke tests on all 10 characters and 5 tools, and confirm clean rendering in the dev server.

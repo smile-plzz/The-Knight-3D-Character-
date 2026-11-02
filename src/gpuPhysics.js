@@ -250,8 +250,83 @@ export function createGPUFurPhysics(renderer) {
     return gpuCompute.getCurrentRenderTarget(posVariable).texture;
   }
 
+  function update(dt, time, options = {}) {
+    if (!isGPGPUActive || !gpuCompute) {
+      return fallbackTexture;
+    }
+
+    let actualDt = dt;
+    let actualTime = time;
+    let opts = options;
+    if (typeof dt === 'object' && dt !== null) {
+      opts = dt;
+      actualDt = opts.dt ?? 0.016;
+      actualTime = opts.time ?? opts.elapsed ?? 0.0;
+    }
+
+    const windStrength = opts.windStrength ?? 1.0;
+    const creatureVelocity = opts.creatureVelocity || opts.inertia || new THREE.Vector3();
+    const creatureAngularVel = opts.creatureAngularVel || new THREE.Vector3();
+    const pointerLocalPos = opts.pointerLocalPos || new THREE.Vector3(0, 0, 99);
+    const pointerVelocity = opts.pointerVelocity || opts.pointerLocalVel || new THREE.Vector3();
+    const pointerActive = Boolean(opts.pointerActive);
+
+    let boopShockwave = 0.0;
+    if (opts.boopShockwave !== undefined) {
+      boopShockwave = opts.boopShockwave;
+    } else if (opts.shockwaveTime !== undefined) {
+      const timeSinceShock = actualTime - opts.shockwaveTime;
+      if (timeSinceShock >= 0 && timeSinceShock < 1.0) {
+        boopShockwave = 1.0 - timeSinceShock;
+      }
+    }
+
+    return step({
+      time: actualTime,
+      dt: actualDt,
+      windStrength,
+      creatureVelocity,
+      creatureAngularVel,
+      pointerLocalPos,
+      pointerVelocity,
+      pointerActive,
+      boopShockwave
+    });
+  }
+
+  function reset() {
+    if (!isGPGPUActive || !gpuCompute) return;
+    try {
+      const dtPosition = gpuCompute.createTexture();
+      const dtVelocity = gpuCompute.createTexture();
+      gpuCompute.renderTexture(dtPosition, posVariable.renderTargets[0]);
+      gpuCompute.renderTexture(dtPosition, posVariable.renderTargets[1]);
+      gpuCompute.renderTexture(dtVelocity, velVariable.renderTargets[0]);
+      gpuCompute.renderTexture(dtVelocity, velVariable.renderTargets[1]);
+    } catch (_e) {
+      // safe fallback
+    }
+  }
+
+  function getTexture() {
+    if (!isGPGPUActive || !gpuCompute) {
+      return fallbackTexture;
+    }
+    try {
+      return gpuCompute.getCurrentRenderTarget(posVariable).texture;
+    } catch (_e) {
+      return fallbackTexture;
+    }
+  }
+
   return {
     step,
+    update,
+    reset,
+    getTexture,
+    get supported() {
+      return isGPGPUActive;
+    },
     get isGPGPUActive() {
       return isGPGPUActive;
     },

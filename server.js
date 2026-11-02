@@ -1,6 +1,10 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = Number(process.env.PORT) || 3000;
 const HOST = '0.0.0.0';
@@ -34,7 +38,7 @@ const server = http.createServer((req, res) => {
     const parsedUrl = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
     let pathname = decodeURIComponent(parsedUrl.pathname);
 
-    if (pathname === '/healthz' || pathname === '/_ah/health') {
+    if (pathname === '/healthz' || pathname === '/_ah/health' || pathname === '/health') {
       res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
       res.end('OK');
       return;
@@ -100,3 +104,13 @@ const server = http.createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`Server listening on http://${HOST}:${PORT} (serving ${ROOT_DIR})`);
 });
+
+const shutdown = () => {
+  console.log('Shutting down server...');
+  server.close(() => {
+    process.exit(0);
+  });
+};
+
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

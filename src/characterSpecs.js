@@ -1,5 +1,5 @@
 // Structured JSON Specification, Hollow Knight Wiki Lore, & Calibrated 3D Simulation Presets
-// for all 8 Hollow Knight Characters
+// for all 10 Canonical Hollow Knight Characters.
 
 export const PIPELINE_METADATA = {
   title: 'Hollow Knight Lore Character Reference & Simulation Pipeline',
@@ -53,6 +53,7 @@ export const CHARACTER_SPECS = [
       cloak: {
         color: 'Deep charcoal-black',
         material: 'Dense woven Mothwing Cloak fabric structure',
+        draping: 'Deeply fluted vertical pleats billowing with wind vectors',
         simulation_properties:
           'Frayed, dynamic fuzz strands engineered for high-displacement wind and collision simulation'
       }
@@ -102,14 +103,16 @@ export const CHARACTER_SPECS = [
         shader_settings: 'Subsurface scattering enabled'
       },
       cloak: {
-        type: 'Massive, tattered shredded silk-cloth',
-        draping: 'Heavy, weighted folds',
+        color: 'Tattered shredded charcoal-grey silk',
+        material: 'Massive, heavy shredded silk-cloth',
+        draping: 'Heavy, weighted floor-length folds',
         simulation_properties: 'Dynamic simulation guides for particle tearing and dust interaction'
       }
     },
     weapon: {
       name: 'Corrupted Greatnail',
-      type: 'Massive, heavy blade matching its towering scale'
+      type: 'Massive, heavy blade matching its towering scale',
+      details: 'Notched blackened steel emitting infection blight sparks'
     }
   },
   {
@@ -144,17 +147,18 @@ export const CHARACTER_SPECS = [
     },
     body_and_attire: {
       physique: 'Slender, agile arachnid-insectoid limbs',
-      defensive_bindings: 'Subtle black-chitin wrapping',
+      skin_texture: 'Subtle black-chitin wrapping',
       cloak: {
         color: 'Vivid, deep crimson-red',
         material: 'Heavy, dynamic Weaversilk fabric with fine reactive micro-fuzz nap',
-        draping: 'Sharp, conical pleated bell draping over agile frame'
+        draping: 'Sharp, conical pleated bell draping over agile frame',
+        simulation_properties: 'Responsive cloth simulation with edge silk micro-fuzz'
       }
     },
     weapon: {
       name: 'Needle & Silk Thread',
       type: 'Razor-sharp, glinting piercing weapon with circular ring hilt',
-      accessory: 'Woven red & gossamer silk tassel'
+      details: 'Polished silver-steel Needle blade trailing woven red silk filament'
     }
   },
   {
@@ -184,20 +188,115 @@ export const CHARACTER_SPECS = [
     },
     head_mask: {
       material: "Cream-colored weathered explorer's mask crowned with Monomon's Dreamer Mask hat",
-      surface_details: 'Distinct snout contour, travel dust, scratches, 4-eyed Dreamer crest on brow',
+      surface_details: 'Distinct rounded beak snout, travel dust, scratches, 4-lens Dreamer crest',
       groom_features: 'Soft velvet-fuzz contour'
     },
     body_and_attire: {
       physique: 'Compact, nimble pillbug body covered in a matte-black velvety nap',
-      attire: {
-        garment: "Deep teal-blue scholar's trench cloak and wrapped neck scarf",
-        material: 'Thick, worn wool-blend fabric',
+      skin_texture: 'Fine dark velvet nap',
+      cloak: {
+        color: 'Deep teal-blue',
+        material: "Deep teal-blue scholar's trench cloak and wrapped neck scarf",
+        draping: 'Worn wool-blend drape with travel wrinkles',
         simulation_properties: 'Visible threading and dynamic edge fuzz'
       }
     },
     weapon: {
       name: 'Curved Explorer Nail',
-      type: "Elegant, finely honed explorer's nail with worn scabbard"
+      type: "Elegant, finely honed explorer's nail with worn leather scabbard",
+      details: 'Single-edged curved steel blade with brass pommel'
+    }
+  },
+  {
+    character_id: 'cloth',
+    name: 'Cloth',
+    shortName: 'Cloth',
+    role: 'Cicada Warrior · Adventurer from Faraway',
+    hotkey: '5',
+    accentColor: '#f59e0b',
+    wikiQuote: '“An amicable, stout cicada warrior traveling through Hallownest to prove her bravery.”',
+    actionName: 'Great-Club Ground Slam',
+    simPreset: {
+      charType: 4,
+      baseColor: '#52341d',
+      tipColor: '#fde68a',
+      maskColor: '#d97706',
+      eyeGlowColor: '#78350f',
+      coreColor: '#b45309',
+      furLength: 0.32,
+      furDensity: 0.84,
+      roughness: 0.78,
+      specular: 0.22,
+      clumping: 0.54,
+      curliness: 0.28,
+      wearAmount: 0.65,
+      windStrength: 0.85
+    },
+    head_mask: {
+      material: 'Stout cicada warrior hood-mask with knotted horn-ears',
+      surface_details: 'Coarse burlap fiber texture, small rounded eye apertures',
+      groom_features: 'Loose burlap fray strands and edge fibers'
+    },
+    body_and_attire: {
+      physique: 'Stocky, robust insectoid warrior build',
+      skin_texture: 'Matte brown velvet nap',
+      cloak: {
+        color: 'Warm ochre and weathered burlap',
+        material: 'Rugged frayed burlap poncho-cape & knotted neck scarf',
+        draping: 'Weighted drape with loose frayed strands',
+        simulation_properties: 'Coarse fabric simulation with fray fiber separation'
+      }
+    },
+    weapon: {
+      name: 'Prickly Great-Club',
+      type: 'Massive dinosaur-bone and timber war-club studded with sharp thorns',
+      details: 'Studded with sharp ivory bone spikes and heavy timber head'
+    }
+  },
+  {
+    character_id: 'grimm',
+    name: 'Troupe Master Grimm',
+    shortName: 'Grimm',
+    role: 'Vessel of the Nightmare Heart · Ringmaster',
+    hotkey: '6',
+    accentColor: '#ef4444',
+    wikiQuote: '“Shadows dream of endless fire, flames devour and embers soar. Dance with me, my friend.”',
+    actionName: 'Nightmare Flame Pillar & Bat Cloak Flare',
+    simPreset: {
+      charType: 5,
+      baseColor: '#18181b',
+      tipColor: '#fca5a5',
+      maskColor: '#ffffff',
+      eyeGlowColor: '#dc2626',
+      coreColor: '#b91c1c',
+      furLength: 0.24,
+      furDensity: 0.92,
+      roughness: 0.44,
+      specular: 0.62,
+      clumping: 0.35,
+      curliness: 0.16,
+      wearAmount: 0.12,
+      windStrength: 1.15
+    },
+    head_mask: {
+      material: 'Stark bone-white theater mask split by vertical scarlet flame markings',
+      surface_details: 'Smooth porcelain finish with high-gloss scarlet streaks, tall swept-back bat horns',
+      groom_features: 'Micro-velvet rim highlight along horn edges'
+    },
+    body_and_attire: {
+      physique: 'Slender, razor-thin vampire-insectoid frame',
+      skin_texture: 'Ultra-fine abyssal velvet nap',
+      cloak: {
+        color: 'Obsidian black with vivid scarlet red inner lining',
+        material: 'High-collared bat-wing outer cloak with jagged hem',
+        draping: 'Dramatic flared collar with scalloped hem folds',
+        simulation_properties: 'High-displacement flutter with sharp bat-wing points'
+      }
+    },
+    weapon: {
+      name: 'Scarlet Nightmare Flame Orbs',
+      type: 'Orbiting lantern of volatile scarlet dreamfire and Nightmare brooch',
+      details: 'Revolving scarlet ember lanterns and glowing chest brooch'
     }
   },
   {
@@ -205,12 +304,12 @@ export const CHARACTER_SPECS = [
     name: 'The Pale King',
     shortName: 'Pale King',
     role: 'Wyrm · Monarch of Hallownest',
-    hotkey: '5',
+    hotkey: '7',
     accentColor: '#fde047',
     wikiQuote: '“No cost too great. The ancient Wyrm who shed his shell to grant sapience to Hallownest.”',
-    actionName: 'Pale Wyrm Soul Beacon',
+    actionName: 'Pale Court Sigil Pulse & Saw Halo',
     simPreset: {
-      charType: 4,
+      charType: 6,
       baseColor: '#cbd5e1',
       tipColor: '#fef9c3',
       maskColor: '#ffffff',
@@ -225,19 +324,25 @@ export const CHARACTER_SPECS = [
       wearAmount: 0.10,
       windStrength: 0.85
     },
-    morphology: 'Ethereal Higher Being combining insectoid royalty and ancient Wyrm anatomy',
-    head_crown: {
-      material: 'Intricate, 6-pronged crown-like white chitinous head-plate',
-      ornamentation: 'Subtle golden filigree with glowing pale-light particle emission'
+    head_mask: {
+      material: 'Regal bone-white Wyrm Crown-Mask with 4 tall symmetrical spikes',
+      surface_details: 'Flawless carved alabaster shell with subtle golden filigree',
+      groom_features: 'Ethereal pale rim fuzz and soul particle dissipation'
     },
-    attire: {
-      garment: 'Multi-layered, ornate white-gold ceremonial monarch robes',
-      material: 'Heavy silk brocade',
-      simulation_properties: 'Reactive fringe fuzz and procedural pale-light dissipation guides'
+    body_and_attire: {
+      physique: 'Ethereal Wyrm Higher Being form concealed beneath robes',
+      skin_texture: 'Silvery velvet nap',
+      cloak: {
+        color: 'Layered pale-silver and white-gold',
+        material: 'Heavy silk brocade ceremonial monarch robes dragging at hem',
+        draping: 'Floor-length heavy drape with pleated folds',
+        simulation_properties: 'Floor-length heavy drape with reactive fringe fuzz'
+      }
     },
     weapon: {
-      name: 'King’s Brand Scepter',
-      type: 'Radiant Pale Court sigil staff and glowing Soul Focus aura'
+      name: "King's Brand Sigil Halo",
+      type: 'Luminous Pale Court buzzsaw-halo and Soul Focus aura',
+      details: 'Concentric rotating gold and pale Soul rings floating behind crown'
     }
   },
   {
@@ -245,14 +350,14 @@ export const CHARACTER_SPECS = [
     name: 'The Radiance',
     shortName: 'The Radiance',
     role: 'Higher Being · Forgotten Light of Dreams',
-    hotkey: '6',
+    hotkey: '8',
     accentColor: '#facc15',
     wikiQuote: '“The blazing, moth-like Higher Being of Light and Dream, source of the Infection.”',
-    actionName: 'Blazing Dawn Burst',
+    actionName: 'Blazing Sunburst & Dream Sword Halo',
     simPreset: {
-      charType: 5,
-      baseColor: '#d97706',
-      tipColor: '#fef9c3',
+      charType: 7,
+      baseColor: '#b45309',
+      tipColor: '#fef08a',
       maskColor: '#ffffff',
       eyeGlowColor: '#ff7b00',
       coreColor: '#f59e0b',
@@ -265,20 +370,25 @@ export const CHARACTER_SPECS = [
       wearAmount: 0.08,
       windStrength: 1.35
     },
-    morphology: 'Moth-like divine deity with 3 crown spikes and radiating light construct wings',
-    head_and_face: {
-      material: 'Pure white luminescent shell plate',
-      eyes: 'Multiple glowing fiery-orange light arrays (emissive volumetric shader)'
+    head_mask: {
+      material: 'Pure white carapace crowned with 3 curved horn-spikes',
+      surface_details: 'Six blazing golden-amber eye arrays',
+      groom_features: 'Dense golden-white moth fluff and mane contours'
     },
-    wings_and_fur: {
-      wings:
-        'Multi-layered ethereal light-feather wings with dynamic particle shredding and energy trails',
-      groom_features:
-        'Dense, luminescent golden-white fluff and micro-fur coat covering the torso and moth mane, reacting to strong wind vectors and divine light physics'
+    body_and_attire: {
+      physique: 'Towering divine moth deity with spiked legs',
+      skin_texture: 'Plush moth fluff',
+      cloak: {
+        color: 'Radiant golden-white',
+        material: 'Multi-layered ethereal light-feather wings draping like a cape',
+        draping: 'Sweeping wing span cascading from shoulders',
+        simulation_properties: 'High-amplitude wind fluttering and divine particle shed'
+      }
     },
     weapon: {
-      name: 'Dream Nail Sword Halo',
-      type: 'Radiating ring of conjured golden-white light blades'
+      name: 'Dream Nail Sword Halo & Sun Core',
+      type: 'Blazing chest core and revolving ring of golden Dream Swords',
+      details: 'Eight conjured light blades and blinding emissive chest orb'
     }
   },
   {
@@ -286,12 +396,12 @@ export const CHARACTER_SPECS = [
     name: 'Zote the Mighty',
     shortName: 'Zote',
     role: 'Self-Proclaimed “Knight of Great Renown”',
-    hotkey: '7',
+    hotkey: '9',
     accentColor: '#c084fc',
     wikiQuote: '“Precept One: Always Win Your Battles. Wields a shellwood blade named Life Ender.”',
     actionName: 'Life Ender Flailing Strike',
     simPreset: {
-      charType: 6,
+      charType: 8,
       baseColor: '#3b2838',
       tipColor: '#a88b9c',
       maskColor: '#cbd5e1',
@@ -307,20 +417,24 @@ export const CHARACTER_SPECS = [
       windStrength: 0.75
     },
     head_mask: {
-      material: 'Dull, chalky grey mask with crooked lopsided horns and grumpy downturned mouth',
-      surface_details: 'Scratches, battle smudges, and lack of maintenance polish'
+      material: 'Dull chalky-grey mask with crooked lopsided horns',
+      surface_details: 'Heavy scratches, battle smudges, grumpy downturned mouth',
+      groom_features: 'Uneven sparse edge fuzz'
     },
     body_and_attire: {
-      physique: 'Compact, awkward insectoid proportions with a haughty tilted posture',
+      physique: 'Compact, awkward insectoid proportions with haughty posture',
+      skin_texture: 'Matte dusty grey nap',
       cloak: {
-        color: 'Dingy, faded purple-brown fabric',
-        simulation_properties:
-          'Stiff, poorly maintained cloth simulation with heavy wrinkles and dust particle interaction'
+        color: 'Dingy faded purple-brown',
+        material: 'Stiff, poorly maintained cloth with heavy wrinkles',
+        draping: 'Stiff, asymmetrical folds with jagged frayed hem',
+        simulation_properties: 'Stiff cloth drape with dust particle shed'
       }
     },
     weapon: {
       name: 'Life Ender',
-      type: 'Cumbersome shellwood sword — incapable of dealing physical damage, yet swung with pride'
+      type: 'Cumbersome carved shellwood sword incapable of cutting, swung with fury',
+      details: 'Rough-hewn wooden blade notched from hitting stone walls'
     }
   },
   {
@@ -328,12 +442,12 @@ export const CHARACTER_SPECS = [
     name: 'Cornifer',
     shortName: 'Cornifer',
     role: 'Master Cartographer of Dirtmouth',
-    hotkey: '8',
+    hotkey: '0',
     accentColor: '#4ade80',
     wikiQuote: '“Hmm-hm-hm-hm-hmmm... A cheerful weevil cartographer charting every cavern of Hallownest.”',
-    actionName: 'Cartographer’s Humming & Quill Sketch',
+    actionName: 'Cartographer Humming & Quill Sketch',
     simPreset: {
-      charType: 7,
+      charType: 9,
       baseColor: '#2d3b2d',
       tipColor: '#a7f3d0',
       maskColor: '#e2c08d',
@@ -349,22 +463,26 @@ export const CHARACTER_SPECS = [
       windStrength: 0.80
     },
     head_mask: {
-      material: 'Warm amber-tinted weevil mask with long curved proboscis trunk & wire spectacles',
-      surface_details: 'Stained with black cartography ink spots and travel wear'
+      material: 'Warm amber weevil mask with long curved proboscis trunk',
+      surface_details: 'Stained with black cartography ink spots and wire spectacles',
+      groom_features: 'Soft velvet-fuzz contour'
     },
     body_and_attire: {
-      physique: 'Plump, rotund insectoid body with a dense warm-brown velvet nap',
-      attire: {
-        garment: "Bulky green-brown traveler's cloak and oversized mapmaker backpack",
-        simulation_properties:
-          'Soft felt and wool texture with loose fuzz strands suited for relaxed cloth drape physics'
+      physique: 'Plump, rotund insectoid body with warm-brown velvet nap',
+      skin_texture: 'Dense plush velvet nap',
+      cloak: {
+        color: 'Earthy green-brown felt',
+        material: "Bulky traveler's cape and oversized backpack strap",
+        draping: 'Soft, rounded folds suited for sitting on a bench',
+        simulation_properties: 'Soft felt and wool texture with loose fuzz'
       }
     },
-    props: 'Carrying a bundle of rolled parchment map scrolls, spectacles, and feather quill',
     weapon: {
       name: 'Rolled Map Bundle & Quill',
-      type: 'Parchment scroll case strapped across back with ink-dipped feather quill'
-    }
+      type: 'Parchment scroll case strapped across back with ink-dipped feather quill',
+      details: 'Bundle of hand-drawn Hallownest maps with a large goose feather quill'
+    },
+    props: 'Rolled parchment maps, wire spectacles, ink bottle, and feather quill'
   }
 ];
 

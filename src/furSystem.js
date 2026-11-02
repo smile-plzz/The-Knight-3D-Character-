@@ -358,7 +358,15 @@ export function createGPUFurSystem(initialBaseGeometry, initialState) {
     // Hide fur shells & guard strands when inspecting Clean Topology Reference (mode 4)
     const showFur = (state.renderMode || 0) < 3.5;
     if (shellMesh) shellMesh.visible = showFur;
-    if (strandMesh) strandMesh.visible = showFur;
+    if (strandMesh) {
+      strandMesh.visible = showFur;
+      if (showFur && strandMesh.geometry) {
+        const activeStrands = Math.floor(
+          STRAND_COUNT * Math.max(0.15, Math.min(1.0, state.furDensity ?? 0.86))
+        );
+        strandMesh.geometry.instanceCount = activeStrands;
+      }
+    }
   }
 
   function setPointerInteraction(localPos, localVel, active) {

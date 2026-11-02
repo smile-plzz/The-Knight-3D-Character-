@@ -1386,14 +1386,46 @@ const AR_POINTS_FRAGMENT_SHADER = /* glsl */ `
 // ENVIRONMENT MANAGER FACTORY
 // ============================================================================
 
-export function createEnvironmentManager({ scene, renderer, container, keyLight, rimLight, hemiLight, furSystem, camera }) {
+export function createEnvironmentManager(arg1, maybeCamera, maybeRenderer) {
+  let scene, renderer, container, keyLight, rimLight, hemiLight, furSystem, camera;
+  if (arg1 && (arg1.isScene || typeof arg1.add === 'function')) {
+    scene = arg1;
+    camera = maybeCamera;
+    renderer = maybeRenderer;
+  } else if (arg1 && typeof arg1 === 'object') {
+    ({ scene, renderer, container, keyLight, rimLight, hemiLight, furSystem, camera } = arg1);
+  }
+  if (!scene) scene = new THREE.Scene();
+  if (!renderer) renderer = { toneMappingExposure: 1.0 };
+  if (!keyLight) keyLight = { color: new THREE.Color(), position: new THREE.Vector3(), intensity: 1.4 };
+  if (!rimLight) rimLight = { color: new THREE.Color(), position: new THREE.Vector3(), intensity: 1.7 };
+  if (!hemiLight) hemiLight = { color: new THREE.Color(), groundColor: new THREE.Color(), intensity: 0.5 };
+
+  const fallbackFurUniforms = {
+    uTime: { value: 0 },
+    uKeyLightDir: { value: new THREE.Vector3(1, 1, 1).normalize() },
+    uKeyLightIntensity: { value: 1.4 },
+    uKeyLightColor: { value: new THREE.Color(1, 1, 1) },
+    uFurLength: { value: 0.25 },
+    uRimLightDir: { value: new THREE.Vector3(-1, 1, -1).normalize() },
+    uRimLightColor: { value: new THREE.Color(0.5, 0.8, 1) },
+    uAmbientIntensity: { value: 0.5 },
+    uEnvSkyColor: { value: new THREE.Color(0.2, 0.5, 1) },
+    uEnvGroundColor: { value: new THREE.Color(0.05, 0.05, 0.05) },
+    uEnvTintStrength: { value: 0.2 }
+  };
+  const furUniforms = furSystem?.sharedUniforms || fallbackFurUniforms;
+
   let currentEnvId = 'studio';
 
   // Optical Tilt-Shift Lens Blur Overlay (active in Cozy Desk / Highrise mode)
-  const tiltShiftOverlay = document.createElement('div');
-  tiltShiftOverlay.id = 'tiltshift-overlay';
-  tiltShiftOverlay.style.display = 'none';
-  document.body.appendChild(tiltShiftOverlay);
+  let tiltShiftOverlay = null;
+  if (typeof document !== 'undefined' && document.createElement) {
+    tiltShiftOverlay = document.createElement('div');
+    tiltShiftOverlay.id = 'tiltshift-overlay';
+    tiltShiftOverlay.style.display = 'none';
+    if (document.body) document.body.appendChild(tiltShiftOverlay);
+  }
 
   // --------------------------------------------------------------------------
   // A. STUDIO GROUP (Deep Black Cyclorama + Soft Contact Shadow + Bokeh Motes)
@@ -1553,10 +1585,10 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
     uCreatureLift: { value: 0.0 },
     uCreatureSquash: { value: new THREE.Vector2(1.0, 1.0) },
     uCreatureRot: { value: new THREE.Vector2(0.0, 0.0) },
-    uKeyLightDir: furSystem.sharedUniforms.uKeyLightDir,
-    uKeyLightIntensity: furSystem.sharedUniforms.uKeyLightIntensity,
-    uKeyLightColor: furSystem.sharedUniforms.uKeyLightColor,
-    uFurLength: furSystem.sharedUniforms.uFurLength
+    uKeyLightDir: furUniforms.uKeyLightDir,
+    uKeyLightIntensity: furUniforms.uKeyLightIntensity,
+    uKeyLightColor: furUniforms.uKeyLightColor,
+    uFurLength: furUniforms.uFurLength
   };
 
   // 1. Loop 13: Twilight Sunset & Tilt-Shift Mountain Valley Cityscape Dome
@@ -3254,8 +3286,8 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
   const arUniforms = {
     uTime: { value: 0.0 },
     uShadowScale: { value: 1.0 },
-    uKeyLightDir: furSystem.sharedUniforms.uKeyLightDir,
-    uKeyLightIntensity: furSystem.sharedUniforms.uKeyLightIntensity
+    uKeyLightDir: furUniforms.uKeyLightDir,
+    uKeyLightIntensity: furUniforms.uKeyLightIntensity
   };
 
   const arReticleGeo = new THREE.PlaneGeometry(2.8, 2.8);
@@ -3323,15 +3355,22 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
   arVideo.setAttribute('playsinline', '');
   arVideo.setAttribute('muted', '');
   arVideo.muted = true;
-  arVideo.style.display = 'none';
-  document.body.insertBefore(arVideo, container);
+  if (container && container.parentNode === document.body) {
+    document.body.insertBefore(arVideo, container);
+  } else if (document.body) {
+    document.body.appendChild(arVideo);
+  }
 
   const arFallbackCanvas = document.createElement('canvas');
   arFallbackCanvas.id = 'ar-fallback-canvas';
   arFallbackCanvas.width = 640;
   arFallbackCanvas.height = 360;
   arFallbackCanvas.style.display = 'none';
-  document.body.insertBefore(arFallbackCanvas, container);
+  if (container && container.parentNode === document.body) {
+    document.body.insertBefore(arFallbackCanvas, container);
+  } else if (document.body) {
+    document.body.appendChild(arFallbackCanvas);
+  }
   const arFallbackCtx = arFallbackCanvas.getContext('2d');
 
   let activeStream = null;
@@ -3557,7 +3596,7 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
       rimLight.color.set(skyColorHex);
       renderer.toneMappingExposure = estExposure;
 
-      const u = furSystem.sharedUniforms;
+      const u = furUniforms;
       u.uAmbientIntensity.value = estAmbientIntensity;
       u.uRimLightColor.value.set(skyColorHex);
       u.uEnvSkyColor.value.set(skyColorHex);
@@ -3969,7 +4008,7 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
     hemiLight.intensity = preset.hemiIntensity;
     renderer.toneMappingExposure = preset.exposure;
 
-    const u = furSystem.sharedUniforms;
+    const u = furUniforms;
     u.uKeyLightColor.value.set(preset.keyColor);
     u.uRimLightColor.value.set(preset.rimColor);
     if (preset.rimLightPos) {
@@ -3999,7 +4038,7 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
     hemiLight.intensity = arPreset.hemiIntensity;
     renderer.toneMappingExposure = arPreset.exposure;
 
-    const u = furSystem.sharedUniforms;
+    const u = furUniforms;
     u.uKeyLightColor.value.set(arPreset.keyColor);
     u.uRimLightColor.value.set(arPreset.rimColor);
     if (arPreset.rimLightPos) {
@@ -4046,9 +4085,12 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
   // --------------------------------------------------------------------------
   // ZERO-GC PER-FRAME UPDATE
   // --------------------------------------------------------------------------
-  function update(elapsedTime, windStrength, creatureRoot) {
-    const shadowScale = 1.0 - creatureRoot.position.y * 0.45;
-    const cx = creatureRoot.position.x * 0.7;
+  function update(elapsedTime, windStrength = 1.0, creatureRoot = null) {
+    const rootPos = creatureRoot?.position || { x: 0, y: 0, z: 0 };
+    const rootScale = creatureRoot?.scale || { x: 0.25, y: 0.25, z: 0.25 };
+    const rootRot = creatureRoot?.rotation || { x: 0, y: 0, z: 0 };
+    const shadowScale = 1.0 - rootPos.y * 0.45;
+    const cx = rootPos.x * 0.7;
 
     if (currentEnvId === 'studio') {
       studioShadowMesh.scale.set(shadowScale, shadowScale, 1.0);
@@ -4056,23 +4098,23 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
       studioMotes.rotation.y = elapsedTime * 0.04;
     } else if (currentEnvId === 'meadow') {
       meadowUniforms.uTime.value = elapsedTime;
-      meadowUniforms.uWindStrength.value = windStrength;
-      const kd = furSystem.sharedUniforms.uKeyLightDir.value;
+      meadowUniforms.uWindStrength.value = windStrength ?? 1.0;
+      const kd = furUniforms?.uKeyLightDir?.value || { x: 0.5, y: 0.5, z: 0.5 };
       meadowUniforms.uSunDir.value.set(kd.x, 0.24, kd.z).normalize();
       meadowPollen.rotation.y = elapsedTime * 0.045;
       meadowPollen.position.y = Math.sin(elapsedTime * 0.85) * 0.10;
     } else if (currentEnvId === 'highrise') {
-      const liftY = Math.max(0.0, creatureRoot.position.y + 0.705);
+      const liftY = Math.max(0.0, rootPos.y + 0.705);
       highriseUniforms.uTime.value = elapsedTime;
-      highriseUniforms.uCreatureXZ.value.set(creatureRoot.position.x, creatureRoot.position.z);
+      highriseUniforms.uCreatureXZ.value.set(rootPos.x, rootPos.z);
       highriseUniforms.uCreatureLift.value = liftY;
       highriseUniforms.uCreatureSquash.value.set(
-        creatureRoot.scale.x / 0.25,
-        creatureRoot.scale.y / 0.25
+        rootScale.x / 0.25,
+        rootScale.y / 0.25
       );
       highriseUniforms.uCreatureRot.value.set(
-        creatureRoot.rotation.y,
-        creatureRoot.rotation.z
+        rootRot.y,
+        rootRot.z
       );
       highriseUniforms.uShadowScale.value = 0.25 * Math.max(0.4, 1.0 - liftY * 1.5);
       cozyLampLight.intensity = 2.25 + Math.sin(elapsedTime * 5.8) * 0.12;
@@ -4082,8 +4124,8 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
     } else if (currentEnvId === 'ar') {
       arUniforms.uTime.value = elapsedTime;
       arUniforms.uShadowScale.value = shadowScale;
-      arReticleMesh.position.x = creatureRoot.position.x;
-      arReticleMesh.position.z = creatureRoot.position.z;
+      arReticleMesh.position.x = rootPos.x;
+      arReticleMesh.position.z = rootPos.z;
       arReticleMesh.position.y = currentAnchorPlaneY;
 
       // Placement pulse animation decay
@@ -4107,6 +4149,7 @@ export function createEnvironmentManager({ scene, renderer, container, keyLight,
   return {
     setEnvironment,
     getEnvironment: () => currentEnvId,
+    getActiveId: () => currentEnvId,
     toggleMirror,
     flipCamera,
     retryCamera: startARCamera,

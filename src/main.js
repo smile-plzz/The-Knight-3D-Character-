@@ -11,7 +11,7 @@ const initialSpec = getCharacterSpecById('the_knight');
 
 const simState = {
   environment: 'studio',
-  viewMode: 'turnaround', // 'turnaround' | 'three_quarter' | 'front' | 'side'
+  viewMode: 'three_quarter', // Default to 3/4 Hero view with active unconstrained OrbitControls!
   renderMode: 0, // 0=Final Render, 1=Groom Map, 2=Displacement Map, 3=SSS Map, 4=Topology
   cursorTool: 0, // 0=Comb, 1=Wind Vortex, 2=Lore Action, 3=Light Wand, 4=X-Ray Lens
   lensChannel: 1, // 1=Groom, 2=Disp, 3=SSS, 4=Topo
@@ -91,6 +91,8 @@ function setSingleCameraAngle(mode) {
   } else if (mode === 'three_quarter') {
     const az = -Math.PI * 0.2;
     desiredCameraPos = new THREE.Vector3(Math.sin(az) * r, y, Math.cos(az) * r);
+  } else if (mode === 'orbit') {
+    desiredCameraPos = null;
   } else {
     desiredCameraPos = null;
   }
@@ -157,7 +159,16 @@ if (gpuPhysics.supported) {
   furSystem.sharedUniforms.uSimPosTex.value = gpuPhysics.getTexture();
 }
 
-const envManager = createEnvironmentManager(scene, camera, renderer);
+const envManager = createEnvironmentManager({
+  scene,
+  camera,
+  renderer,
+  container,
+  keyLight,
+  rimLight,
+  hemiLight: ambientLight,
+  furSystem
+});
 
 const lightDir = new THREE.Vector3();
 const rimDir = new THREE.Vector3();
@@ -240,7 +251,9 @@ uiController = initUI(
   (actionType) => {
     const now = performance.now() * 0.001;
     if (actionType === 'resetGroom') {
-      gpuPhysics.reset();
+      if (gpuPhysics && typeof gpuPhysics.reset === 'function') {
+        gpuPhysics.reset();
+      }
       furSystem.triggerShockwave(new THREE.Vector3(0, 0, 0.8), now);
     } else if (actionType === 'characterAction') {
       creature.triggerCharacterAction();
@@ -256,16 +269,47 @@ uiController = initUI(
   (characterId, spec) => {
     const newGeom = creature.setCharacter(characterId, spec.simPreset);
     furSystem.rebuildForGeometry(newGeom);
-    gpuPhysics.reset();
+    if (gpuPhysics && typeof gpuPhysics.reset === 'function') {
+      gpuPhysics.reset();
+    }
     furSystem.triggerShockwave(new THREE.Vector3(0, 0.15, 0.65), performance.now() * 0.001);
   }
 );
 
 applyEnvironmentSelection('studio');
 
+// Wire up minimal header action button
+const headerActionBtn = document.getElementById('btn-header-action');
+if (headerActionBtn) {
+  headerActionBtn.addEventListener('click', () => {
+    creature.triggerCharacterAction();
+    furSystem.triggerShockwave(new THREE.Vector3(0, 0.1, 0.6), performance.now() * 0.001);
+  });
+}
+
 if (hudHint) {
-  hudHint.textContent =
-    'Keys 1–8: Switch Lore Characters · Q/W/E/R/T: Interactive Tools (Brush, Wind Vortex, Action, Light Wand, X-Ray Lens) · Click/Drag on any view';
+  hudHint.innerHTML = `
+    <span class="subtle-hint-dot" aria-hidden="true">✦</span>
+    <span class="subtle-hint-text">
+      <span>Drag to orbit</span>
+      <span class="hint-sep">·</span>
+      <span>Scroll to zoom</span>
+      <span class="hint-sep">·</span>
+      <kbd>Space</kbd> Action
+      <span class="hint-sep">·</span>
+      <kbd>1–0</kbd> Characters
+      <span class="hint-sep">·</span>
+      <kbd>I</kbd> Controls
+    </span>
+    <button class="subtle-hint-dismiss" type="button" aria-label="Dismiss Shortcuts">&times;</button>
+  `;
+  const dismissBtn = hudHint.querySelector('.subtle-hint-dismiss');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      hudHint.classList.add('hidden');
+    });
+  }
 }
 
 // Keyboard Shortcuts for instant interactivity
@@ -274,10 +318,14 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   const key = e.key.toUpperCase();
-  if (key >= '1' && key <= '8') {
+  if (key >= '1' && key <= '9') {
     const idx = parseInt(key, 10) - 1;
     if (CHARACTER_SPECS[idx] && uiController) {
       uiController.selectCharacterById(CHARACTER_SPECS[idx].character_id);
+    }
+  } else if (key === '0') {
+    if (CHARACTER_SPECS[9] && uiController) {
+      uiController.selectCharacterById(CHARACTER_SPECS[9].character_id);
     }
   } else if (key === 'Q' && uiController) {
     uiController.setCursorTool(0);
@@ -291,6 +339,8 @@ window.addEventListener('keydown', (e) => {
     uiController.setCursorTool(3);
   } else if (key === 'T' && uiController) {
     uiController.setCursorTool(4);
+  } else if (key === 'I' && uiController && typeof uiController.toggleInspector === 'function') {
+    uiController.toggleInspector();
   } else if (e.code === 'Space') {
     e.preventDefault();
     creature.triggerCharacterAction();
@@ -382,11 +432,13 @@ function handlePointerMove(clientX, clientY) {
 window.addEventListener('pointermove', (e) => {
   if (
     e.target &&
-    (e.target.closest('#ui-root') ||
+    (e.target.closest('#studio-header') ||
+      e.target.closest('#ui-root') ||
       e.target.closest('#scene-nav') ||
       e.target.closest('#page-nav') ||
       e.target.closest('#character-roster-dock') ||
-      e.target.closest('#json-pipeline-modal'))
+      e.target.closest('#json-pipeline-modal') ||
+      e.target.closest('#hud-hint'))
   ) {
     isPointerOnCreature = false;
     cursorRingMat.opacity = 0.0;
@@ -398,12 +450,14 @@ window.addEventListener('pointermove', (e) => {
 window.addEventListener('pointerdown', (e) => {
   if (
     e.target &&
-    (e.target.closest('#ui-root') ||
+    (e.target.closest('#studio-header') ||
+      e.target.closest('#ui-root') ||
       e.target.closest('#scene-nav') ||
       e.target.closest('#page-nav') ||
       e.target.closest('#character-roster-dock') ||
       e.target.closest('.turnaround-col-expand') ||
-      e.target.closest('#json-pipeline-modal'))
+      e.target.closest('#json-pipeline-modal') ||
+      e.target.closest('#hud-hint'))
   ) {
     return;
   }
@@ -462,7 +516,7 @@ function animate() {
   springVelocity.addScaledVector(accel, dt);
   springInertia.addScaledVector(springVelocity, dt);
 
-  envManager.update(dt, elapsed);
+  envManager.update(elapsed, simState.windStrength, creature.root);
 
   const creatureAnim = creature.update(
     dt,
@@ -499,7 +553,7 @@ function animate() {
     isPointerOnCreature ? 1.0 : 0.0
   );
 
-  if (gpuPhysics.supported) {
+  if (gpuPhysics && gpuPhysics.supported && typeof gpuPhysics.update === 'function') {
     const simTex = gpuPhysics.update(dt, elapsed, {
       windStrength: simState.windStrength,
       curliness: simState.curliness,

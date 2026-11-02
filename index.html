@@ -5,20 +5,100 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>The Knight — 3D Character Reference &amp; GPU Fur Simulation</title>
   <meta name="description" content="Interactive 3D character reference sheet of the Knight from Hollow Knight with multi-angle turnaround views, GPU micro-fur shaders, soft-body cloak physics, and particle simulation." />
+  <meta property="og:type" content="website" />
+  <meta property="og:site_name" content="Hallownest 3D Asset Studio" />
   <meta property="og:title" content="The Knight — 3D Character Reference &amp; GPU Fur Simulation" />
   <meta property="og:description" content="Interactive 3D character reference sheet of the Knight from Hollow Knight with multi-angle turnaround views, GPU micro-fur shaders, soft-body cloak physics, and particle simulation." />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="The Knight — 3D Character Reference &amp; GPU Fur Simulation" />
+  <meta name="twitter:description" content="Interactive 3D character reference sheet of the Knight from Hollow Knight with multi-angle turnaround views, GPU micro-fur shaders, soft-body cloak physics, and particle simulation." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="./style.css" />
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "The Knight — 3D Character Reference & GPU Fur Simulation",
+    "description": "Interactive 3D character reference sheet of the Knight from Hollow Knight with multi-angle turnaround views, GPU micro-fur shaders, soft-body cloak physics, and particle simulation.",
+    "applicationCategory": "MultimediaApplication",
+    "genre": "3D Character Reference & Shader Lookdev",
+    "operatingSystem": "All modern browsers with WebGL/WebGL2 support",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD"
+    }
+  }
+  </script>
 </head>
 <body>
-  <nav id="page-nav" aria-label="View and Render Mode Switcher"></nav>
-  <nav id="scene-nav" class="scene-nav-bar" aria-label="Scene Selection"></nav>
-  <div id="turnaround-overlay" class="turnaround-overlay" aria-hidden="true"></div>
+  <header id="studio-header" class="studio-header" aria-label="Studio Pipeline Navigation">
+    <div class="header-left">
+      <div class="studio-brand">
+        <span class="brand-crest" aria-hidden="true">✦</span>
+        <span class="brand-title">HALLOWNEST</span>
+        <span class="header-char-separator" aria-hidden="true">/</span>
+        <span id="header-char-badge" class="header-char-badge">The Knight</span>
+      </div>
+    </div>
+
+    <div class="header-center">
+      <nav id="view-mode-nav" class="nav-segment-group" aria-label="Camera Views"></nav>
+    </div>
+
+    <div class="header-right">
+      <!-- Lighting Dropdown -->
+      <div class="header-dropdown-container">
+        <button id="btn-lighting-dropdown" class="header-dropdown-trigger" type="button" aria-haspopup="true" aria-expanded="false" title="Change Studio Lighting Environment">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"/><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          <span id="label-active-env">Studio</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div id="lighting-menu" class="header-dropdown-menu hidden" role="menu">
+          <nav id="scene-nav" class="dropdown-list" aria-label="Lighting Environments"></nav>
+        </div>
+      </div>
+
+      <!-- Shading / Render Pass Dropdown -->
+      <div class="header-dropdown-container">
+        <button id="btn-shading-dropdown" class="header-dropdown-trigger" type="button" aria-haspopup="true" aria-expanded="false" title="Change Render Pass">
+          <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="label-active-pass">Beauty</span>
+          <svg class="dropdown-chevron" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div id="shading-menu" class="header-dropdown-menu hidden" role="menu">
+          <nav id="render-pass-nav" class="dropdown-list" aria-label="Render Passes"></nav>
+        </div>
+      </div>
+
+      <div class="header-divider" aria-hidden="true"></div>
+
+      <!-- Quick Action Trigger Button -->
+      <button id="btn-header-action" class="header-action-btn" type="button" title="Trigger Character Action (Space)">
+        <span class="action-spark">✦</span>
+        <span id="header-action-label">Action</span>
+        <kbd class="mini-kbd">Space</kbd>
+      </button>
+
+      <!-- Inspector Toggle Button -->
+      <button id="btn-toggle-inspector" class="header-tool-btn" type="button" title="Toggle Controls Inspector (I)">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span>Controls</span>
+        <kbd class="mini-kbd">I</kbd>
+      </button>
+
+      <!-- Spec Modal Button -->
+      <button id="btn-json-spec" class="header-tool-btn icon-only" type="button" title="View JSON Pipeline Spec &amp; Hollow Knight Lore Wiki">
+        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg>
+      </button>
+    </div>
+  </header>
+  <div id="turnaround-overlay" class="turnaround-overlay hidden" aria-hidden="true"></div>
   <div id="canvas-container" aria-label="Interactive 3D Character Turnaround and GPU Fur Simulation"></div>
-  <aside id="ui-root" aria-label="Fur, Cloth, and Studio Lighting Controls"></aside>
-  <div id="hud-hint" aria-live="polite"></div>
+  <aside id="ui-root" class="drawer-hidden" aria-label="Fur, Cloth, and Studio Lighting Controls"></aside>
+  <div id="hud-hint" class="studio-subtle-hint" aria-live="polite"></div>
   <script type="module" src="./src/main.js"></script>
 </body>
 </html>

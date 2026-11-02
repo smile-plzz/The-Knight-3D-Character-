@@ -25,18 +25,19 @@ export function sanitizeHexColor(val, fallback) {
 }
 
 export const VIEW_MODES = [
-  { id: 'turnaround', label: '3-View Reference Sheet', badge: '0° · -36° · 90°' },
-  { id: 'three_quarter', label: 'Three-Quarter View', badge: '-36° Hero' },
-  { id: 'front', label: 'Front Ortho View', badge: '0° Front' },
-  { id: 'side', label: 'Side Profile View', badge: '90° Side' }
+  { id: 'three_quarter', label: '3/4 Hero', shortLabel: '3/4', badge: '-36° Hero' },
+  { id: 'front', label: 'Front', shortLabel: 'Front', badge: '0° Front' },
+  { id: 'side', label: 'Side', shortLabel: 'Side', badge: '90° Side' },
+  { id: 'orbit', label: 'Free Orbit', shortLabel: 'Orbit', badge: 'Free 3D' },
+  { id: 'turnaround', label: '3-View Sheet', shortLabel: 'Sheet', badge: '0° · -36° · 90°' }
 ];
 
 export const RENDER_MODES = [
-  { id: 0, label: 'Final Render (UE5 / Cycles)', shortLabel: 'Final Render' },
-  { id: 1, label: 'Groom & Cloth Weight Map', shortLabel: 'Groom Map' },
-  { id: 2, label: 'Carapace & Cloth Displacement', shortLabel: 'Disp Map' },
-  { id: 3, label: 'Subsurface Scattering (SSS)', shortLabel: 'SSS Map' },
-  { id: 4, label: 'Clean Topology Reference', shortLabel: 'Topology' }
+  { id: 0, label: 'Final Beauty (UE5 / Cycles)', shortLabel: 'Beauty' },
+  { id: 1, label: 'Groom & Fur Map', shortLabel: 'Groom' },
+  { id: 2, label: 'Displacement Map', shortLabel: 'Displacement' },
+  { id: 3, label: 'Subsurface Scattering (SSS)', shortLabel: 'SSS' },
+  { id: 4, label: 'Clean Topology Wireframe', shortLabel: 'Topology' }
 ];
 
 export const CURSOR_TOOLS = [
@@ -44,30 +45,35 @@ export const CURSOR_TOOLS = [
     id: 0,
     key: 'Q',
     label: 'Groom Brush',
+    shortLabel: 'Groom',
     desc: 'Comb & part 60k micro-fur & cloak fibers'
   },
   {
     id: 1,
     key: 'W',
     label: 'Wind Vortex',
+    shortLabel: 'Wind',
     desc: 'Billow soft-body cloak, silk & moth wings'
   },
   {
     id: 2,
     key: 'E',
     label: 'Lore Action',
+    shortLabel: 'Action',
     desc: 'Trigger signature weapon & particle burst'
   },
   {
     id: 3,
     key: 'R',
     label: 'Light Wand',
+    shortLabel: 'Light',
     desc: 'Move live dual-spectrum SSS & rim light'
   },
   {
     id: 4,
     key: 'T',
     label: 'X-Ray Lens',
+    shortLabel: 'X-Ray',
     desc: 'Magnify internal shader maps on hover'
   }
 ];
@@ -118,36 +124,18 @@ export function initUI(
   const zoneUpdaters = [];
 
   // -------------------------------------------------------------------------
-  // 1. TOP BAR (#page-nav): View Angle Switcher + Render Pass + JSON Spec Btn
+  // 1. TOP BAR: View Mode Switcher + Dropdowns + Spec Modal + Inspector
   // -------------------------------------------------------------------------
-  const pageNav = document.getElementById('page-nav');
-  if (pageNav) {
-    pageNav.textContent = '';
-
-    const brandBadge = document.createElement('div');
-    brandBadge.className = 'ref-brand-badge';
-
-    const brandDot = document.createElement('span');
-    brandDot.className = 'ref-brand-dot';
-
-    const brandTitle = document.createElement('span');
-    brandTitle.className = 'ref-brand-title';
-    brandTitle.textContent = 'HALLOWNEST 3D ASSET & FUR PIPELINE';
-
-    brandBadge.appendChild(brandDot);
-    brandBadge.appendChild(brandTitle);
-    pageNav.appendChild(brandBadge);
-
-    // View angle switcher group
-    const viewGroup = document.createElement('div');
-    viewGroup.className = 'top-pill-group';
-
+  const viewNav = document.getElementById('view-mode-nav');
+  if (viewNav) {
+    viewNav.textContent = '';
     VIEW_MODES.forEach((vm) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
-        'nav-pill' + ((state.viewMode || 'turnaround') === vm.id ? ' active' : '');
+        'nav-pill' + ((state.viewMode || 'three_quarter') === vm.id ? ' active' : '');
       btn.textContent = vm.label;
+      btn.title = vm.badge || vm.label;
       btn.addEventListener('click', () => {
         state.viewMode = vm.id;
         syncViewNavActive();
@@ -155,50 +143,161 @@ export function initUI(
           onViewModeSelect(vm.id);
         }
       });
-      viewGroup.appendChild(btn);
+      viewNav.appendChild(btn);
       viewNavUpdaters.push((activeMode) => {
         btn.classList.toggle('active', activeMode === vm.id);
       });
     });
+  }
 
-    pageNav.appendChild(viewGroup);
+  // Header Dropdowns: Lighting & Shading
+  const lightingMenu = document.getElementById('lighting-menu');
+  const btnLighting = document.getElementById('btn-lighting-dropdown');
+  const labelActiveEnv = document.getElementById('label-active-env');
+  const sceneNav = document.getElementById('scene-nav');
+  const sceneButtons = new Map();
 
-    // Technical Render Channel Switcher
-    const passGroup = document.createElement('div');
-    passGroup.className = 'top-pill-group pass-pill-group';
+  const shadingMenu = document.getElementById('shading-menu');
+  const btnShading = document.getElementById('btn-shading-dropdown');
+  const labelActivePass = document.getElementById('label-active-pass');
+  const passNav = document.getElementById('render-pass-nav');
 
+  function closeAllDropdowns() {
+    if (lightingMenu) lightingMenu.classList.add('hidden');
+    if (shadingMenu) shadingMenu.classList.add('hidden');
+    if (btnLighting) {
+      btnLighting.classList.remove('active');
+      btnLighting.setAttribute('aria-expanded', 'false');
+    }
+    if (btnShading) {
+      btnShading.classList.remove('active');
+      btnShading.setAttribute('aria-expanded', 'false');
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.header-dropdown-container')) {
+      closeAllDropdowns();
+    }
+  });
+
+  if (btnLighting && lightingMenu) {
+    btnLighting.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = lightingMenu.classList.contains('hidden');
+      closeAllDropdowns();
+      if (isHidden) {
+        lightingMenu.classList.remove('hidden');
+        btnLighting.classList.add('active');
+        btnLighting.setAttribute('aria-expanded', 'true');
+      }
+    });
+  }
+
+  if (sceneNav) {
+    sceneNav.textContent = '';
+    ENVIRONMENT_PRESETS.forEach((env) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className =
+        'dropdown-item' + (state.environment === env.id ? ' active' : '');
+      btn.setAttribute('aria-pressed', state.environment === env.id ? 'true' : 'false');
+
+      const nameSpan = document.createElement('span');
+      nameSpan.className = 'dropdown-item-name';
+      nameSpan.textContent = env.name;
+
+      const subSpan = document.createElement('span');
+      subSpan.className = 'dropdown-item-sub';
+      subSpan.textContent = env.subtitle;
+
+      btn.appendChild(nameSpan);
+      btn.appendChild(subSpan);
+
+      btn.addEventListener('click', () => {
+        const safeId = sanitizeEnvId(env.id);
+        if (typeof onEnvironmentSelect === 'function') {
+          onEnvironmentSelect(safeId);
+        }
+        if (labelActiveEnv) {
+          labelActiveEnv.textContent = env.name.split(' ')[0];
+        }
+        closeAllDropdowns();
+      });
+
+      sceneNav.appendChild(btn);
+      sceneButtons.set(env.id, btn);
+    });
+  }
+
+  if (btnShading && shadingMenu) {
+    btnShading.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isHidden = shadingMenu.classList.contains('hidden');
+      closeAllDropdowns();
+      if (isHidden) {
+        shadingMenu.classList.remove('hidden');
+        btnShading.classList.add('active');
+        btnShading.setAttribute('aria-expanded', 'true');
+      }
+    });
+  }
+
+  if (passNav) {
+    passNav.textContent = '';
     RENDER_MODES.forEach((rm) => {
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className =
-        'nav-pill pass-pill' + ((state.renderMode || 0) === rm.id ? ' active' : '');
-      btn.textContent = rm.shortLabel;
-      btn.title = rm.label;
+        'dropdown-item' + ((state.renderMode || 0) === rm.id ? ' active' : '');
+      btn.textContent = rm.label;
       btn.addEventListener('click', () => {
         state.renderMode = rm.id;
         syncRenderPassActive();
+        if (labelActivePass) {
+          labelActivePass.textContent = rm.shortLabel;
+        }
+        closeAllDropdowns();
         onChange(state);
       });
-      passGroup.appendChild(btn);
+      passNav.appendChild(btn);
       renderPassUpdaters.push((activePass) => {
         btn.classList.toggle('active', activePass === rm.id);
       });
     });
+  }
 
-    pageNav.appendChild(passGroup);
-
-    // JSON Pipeline Spec Modal Trigger Button
-    const jsonBtn = document.createElement('button');
-    jsonBtn.type = 'button';
-    jsonBtn.className = 'nav-pill json-spec-trigger';
-    jsonBtn.appendChild(createActionIcon('code'));
-    const jsonBtnTxt = document.createElement('span');
-    jsonBtnTxt.textContent = 'JSON Pipeline & Wiki';
-    jsonBtn.appendChild(jsonBtnTxt);
+  // Top Bar Action Buttons
+  const jsonBtn = document.getElementById('btn-json-spec');
+  if (jsonBtn) {
     jsonBtn.addEventListener('click', () => {
       toggleJsonModal(true);
     });
-    pageNav.appendChild(jsonBtn);
+  }
+
+  const inspectorBtn = document.getElementById('btn-toggle-inspector');
+  let isInspectorOpen = false; // Closed by default for maximum interaction space
+
+  function toggleInspector(forceState) {
+    if (typeof forceState === 'boolean') {
+      isInspectorOpen = forceState;
+    } else {
+      isInspectorOpen = !isInspectorOpen;
+    }
+    const uiRootEl = document.getElementById('ui-root');
+    if (uiRootEl) {
+      uiRootEl.classList.toggle('drawer-hidden', !isInspectorOpen);
+      uiRootEl.classList.toggle('mobile-sheet-open', isInspectorOpen);
+    }
+    if (inspectorBtn) {
+      inspectorBtn.classList.toggle('active', isInspectorOpen);
+    }
+  }
+
+  if (inspectorBtn) {
+    inspectorBtn.addEventListener('click', () => {
+      toggleInspector();
+    });
   }
 
   // -------------------------------------------------------------------------
@@ -300,47 +399,41 @@ export function initUI(
   }
 
   // -------------------------------------------------------------------------
-  // 3. INTERACTIVE 8-CHARACTER ROSTER DOCK & CURSOR TOOLBELT (Bottom Center)
+  // 3. MINIMAL MODERN STUDIO DOCK (Bottom Center Capsule)
   // -------------------------------------------------------------------------
   let interactiveDock = document.getElementById('character-roster-dock');
   if (!interactiveDock) {
     interactiveDock = document.createElement('div');
     interactiveDock.id = 'character-roster-dock';
-    interactiveDock.className = 'character-roster-dock';
     document.body.appendChild(interactiveDock);
   }
+  interactiveDock.className = 'studio-dock';
   interactiveDock.textContent = '';
 
-  // Row A: Interactive Cursor Toolbelt (Brush, Wind Vortex, Action Strike, Light Wand, X-Ray Lens)
-  const toolbeltBar = document.createElement('div');
-  toolbeltBar.className = 'cursor-toolbelt-bar';
-
-  const toolbeltLabel = document.createElement('span');
-  toolbeltLabel.className = 'toolbelt-caption';
-  toolbeltLabel.textContent = 'INTERACTIVE TOOLS:';
-  toolbeltBar.appendChild(toolbeltLabel);
+  // Tools Section (Left)
+  const dockToolsGroup = document.createElement('div');
+  dockToolsGroup.className = 'dock-group dock-tools-group';
 
   CURSOR_TOOLS.forEach((tool) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className =
-      'cursor-tool-btn' + ((state.cursorTool || 0) === tool.id ? ' active' : '');
+      'dock-tool-btn' + ((state.cursorTool || 0) === tool.id ? ' active' : '');
     btn.title = `${tool.label} (${tool.key}) — ${tool.desc}`;
 
     const keyBadge = document.createElement('span');
-    keyBadge.className = 'tool-key-badge';
+    keyBadge.className = 'dock-key';
     keyBadge.textContent = tool.key;
 
     const labelSpan = document.createElement('span');
-    labelSpan.className = 'tool-label-text';
-    labelSpan.textContent = tool.label;
+    labelSpan.className = 'dock-label';
+    labelSpan.textContent = tool.shortLabel || tool.label;
 
     btn.appendChild(keyBadge);
     btn.appendChild(labelSpan);
 
     btn.addEventListener('click', () => {
       if (tool.id === 2) {
-        // Also immediately fire the character's signature action burst on click!
         state.cursorTool = 2;
         syncToolActive();
         onChange(state);
@@ -352,19 +445,19 @@ export function initUI(
       }
     });
 
-    toolbeltBar.appendChild(btn);
+    dockToolsGroup.appendChild(btn);
     toolUpdaters.push((activeTool) => {
       btn.classList.toggle('active', activeTool === tool.id);
     });
   });
 
-  // X-Ray Lens Channel Selector (shown when X-Ray Lens is active)
+  // X-Ray Lens Channel Selector
   const lensSelectWrap = document.createElement('div');
-  lensSelectWrap.className = 'lens-channel-wrap';
-  const lensLabel = document.createElement('span');
-  lensLabel.className = 'toolbelt-caption';
-  lensLabel.textContent = 'LENS MAP:';
-  lensSelectWrap.appendChild(lensLabel);
+  lensSelectWrap.className = 'dock-lens-wrap';
+  lensSelectWrap.style.display = (state.cursorTool === 4) ? 'inline-flex' : 'none';
+  toolUpdaters.push((activeTool) => {
+    lensSelectWrap.style.display = (activeTool === 4) ? 'inline-flex' : 'none';
+  });
 
   const lensChannels = [
     { id: 1, name: 'Groom' },
@@ -377,11 +470,11 @@ export function initUI(
     const lBtn = document.createElement('button');
     lBtn.type = 'button';
     lBtn.className =
-      'lens-mini-btn' + ((state.lensChannel || 1) === lc.id ? ' active' : '');
+      'dock-lens-btn' + ((state.lensChannel || 1) === lc.id ? ' active' : '');
     lBtn.textContent = lc.name;
     lBtn.addEventListener('click', () => {
       state.lensChannel = lc.id;
-      state.cursorTool = 4; // Auto-enable X-Ray Lens when choosing a lens map
+      state.cursorTool = 4;
       lensBtns.forEach((b, i) => b.classList.toggle('active', lensChannels[i].id === lc.id));
       syncToolActive();
       onChange(state);
@@ -389,96 +482,54 @@ export function initUI(
     lensBtns.push(lBtn);
     lensSelectWrap.appendChild(lBtn);
   });
-  toolbeltBar.appendChild(lensSelectWrap);
+  dockToolsGroup.appendChild(lensSelectWrap);
+  interactiveDock.appendChild(dockToolsGroup);
 
-  interactiveDock.appendChild(toolbeltBar);
+  // Divider
+  const dockDivider = document.createElement('div');
+  dockDivider.className = 'dock-divider';
+  dockDivider.setAttribute('aria-hidden', 'true');
+  interactiveDock.appendChild(dockDivider);
 
-  // Row B: 8-Character Hollow Knight Lore Switcher Bar
-  const rosterBar = document.createElement('div');
-  rosterBar.className = 'character-roster-bar';
+  // Characters Section (Right)
+  const dockCharsGroup = document.createElement('div');
+  dockCharsGroup.className = 'dock-group dock-chars-group';
 
   CHARACTER_SPECS.forEach((charSpec) => {
     const btn = document.createElement('button');
     btn.type = 'button';
     const isSelected = (state.characterId || 'the_knight') === charSpec.character_id;
-    btn.className = 'character-card-btn' + (isSelected ? ' active' : '');
+    btn.className = 'dock-char-btn' + (isSelected ? ' active' : '');
     btn.style.setProperty('--char-accent', charSpec.accentColor);
-
-    const topRow = document.createElement('div');
-    topRow.className = 'char-card-top';
-
-    const keySpan = document.createElement('span');
-    keySpan.className = 'char-hotkey';
-    keySpan.textContent = charSpec.hotkey;
+    btn.title = `${charSpec.name} (${charSpec.hotkey}) — ${charSpec.role}`;
 
     const dotSpan = document.createElement('span');
-    dotSpan.className = 'char-swatch-dot';
+    dotSpan.className = 'dock-char-dot';
     dotSpan.style.backgroundColor = charSpec.accentColor;
 
-    topRow.appendChild(keySpan);
-    topRow.appendChild(dotSpan);
+    const numSpan = document.createElement('span');
+    numSpan.className = 'dock-char-num';
+    numSpan.textContent = charSpec.hotkey;
 
-    const nameSpan = document.createElement('div');
-    nameSpan.className = 'char-card-name';
+    const nameSpan = document.createElement('span');
+    nameSpan.className = 'dock-char-name';
     nameSpan.textContent = charSpec.shortName;
 
-    const roleSpan = document.createElement('div');
-    roleSpan.className = 'char-card-role';
-    roleSpan.textContent = charSpec.role.split('·')[0].trim();
-
-    btn.appendChild(topRow);
+    btn.appendChild(dotSpan);
+    btn.appendChild(numSpan);
     btn.appendChild(nameSpan);
-    btn.appendChild(roleSpan);
 
     btn.addEventListener('click', () => {
       selectCharacterById(charSpec.character_id);
     });
 
-    rosterBar.appendChild(btn);
+    dockCharsGroup.appendChild(btn);
     characterUpdaters.push((activeCharId) => {
       btn.classList.toggle('active', activeCharId === charSpec.character_id);
     });
   });
 
-  interactiveDock.appendChild(rosterBar);
-
-  // -------------------------------------------------------------------------
-  // 4. SCENE / ENVIRONMENT BAR (#scene-nav)
-  // -------------------------------------------------------------------------
-  const sceneNav = document.getElementById('scene-nav');
-  const sceneButtons = new Map();
-
-  if (sceneNav) {
-    sceneNav.textContent = '';
-    ENVIRONMENT_PRESETS.forEach((env) => {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className =
-        'scene-pill' + (state.environment === env.id ? ' active' : '');
-      btn.setAttribute('aria-pressed', state.environment === env.id ? 'true' : 'false');
-
-      const nameSpan = document.createElement('span');
-      nameSpan.className = 'scene-pill-name';
-      nameSpan.textContent = env.name;
-
-      const subSpan = document.createElement('span');
-      subSpan.className = 'scene-pill-sub';
-      subSpan.textContent = env.subtitle;
-
-      btn.appendChild(nameSpan);
-      btn.appendChild(subSpan);
-
-      btn.addEventListener('click', () => {
-        const safeId = sanitizeEnvId(env.id);
-        if (typeof onEnvironmentSelect === 'function') {
-          onEnvironmentSelect(safeId);
-        }
-      });
-
-      sceneNav.appendChild(btn);
-      sceneButtons.set(env.id, btn);
-    });
-  }
+  interactiveDock.appendChild(dockCharsGroup);
 
   // -------------------------------------------------------------------------
   // 5. RIGHT INSPECTOR PANEL (#ui-root): Lore Specs, Zone Isolation & Sliders
@@ -520,14 +571,29 @@ export function initUI(
   titleWrap.appendChild(panelTitleEl);
   titleWrap.appendChild(panelSubEl);
 
+  const headerActions = document.createElement('div');
+  headerActions.className = 'header-btn-group';
+
   const collapseBtn = document.createElement('button');
   collapseBtn.type = 'button';
   collapseBtn.className = 'collapse-btn';
-  collapseBtn.setAttribute('aria-label', 'Toggle Simulation Controls');
+  collapseBtn.setAttribute('aria-label', 'Collapse Inspector Sections');
   collapseBtn.appendChild(createActionIcon('chevron'));
 
-  header.appendChild(titleWrap);
-  header.appendChild(collapseBtn);
+  const closeDrawerBtn = document.createElement('button');
+  closeDrawerBtn.type = 'button';
+  closeDrawerBtn.className = 'drawer-close-btn';
+  closeDrawerBtn.setAttribute('aria-label', 'Close Inspector (I)');
+  closeDrawerBtn.title = 'Close Inspector (I)';
+  closeDrawerBtn.innerHTML = '&times;';
+  closeDrawerBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    toggleInspector(false);
+  });
+
+  headerActions.appendChild(collapseBtn);
+  headerActions.appendChild(closeDrawerBtn);
+  header.appendChild(headerActions);
   card.appendChild(header);
 
   const body = document.createElement('div');
@@ -871,21 +937,23 @@ export function initUI(
     zoneListEl.textContent = '';
     zoneUpdaters.length = 0;
 
+    const headMask = spec?.head_mask || {};
+    const bodyAttire = spec?.body_and_attire || {};
     const cloakOrAttire =
-      spec.body_and_attire.cloak ||
-      spec.body_and_attire.attire ||
-      spec.body_and_attire.wings ||
+      bodyAttire.cloak ||
+      bodyAttire.attire ||
+      bodyAttire.wings ||
       {};
     const coreOrWeapon =
-      spec.body_and_attire.infection_core ||
-      spec.weapon || { name: 'Props', type: spec.props || 'Lore Relic' };
+      bodyAttire.infection_core ||
+      spec?.weapon || { name: 'Props', type: spec?.props || 'Lore Relic' };
 
     const zones = [
       {
         id: 1,
         code: 'ZONE 01 · HEAD MASK / CROWN',
-        title: spec.head_mask.material,
-        detail: `${spec.head_mask.surface_details} · ${spec.head_mask.groom_features}`,
+        title: headMask.material || 'Matte Porcelain Carapace',
+        detail: `${headMask.surface_details || 'Micro-scratches'} · ${headMask.groom_features || 'Velvet fuzz'}`,
         color: '#38bdf8'
       },
       {
@@ -895,6 +963,7 @@ export function initUI(
           cloakOrAttire.material ||
           cloakOrAttire.type ||
           cloakOrAttire.garment ||
+          cloakOrAttire.color ||
           'Dynamic Woven Fabric',
         detail:
           cloakOrAttire.simulation_properties ||
@@ -905,11 +974,11 @@ export function initUI(
       {
         id: 3,
         code: 'ZONE 03 · PHYSIQUE & VELVETY NAP',
-        title: spec.body_and_attire.physique,
+        title: bodyAttire.physique || 'Insectoid Anatomy',
         detail:
-          spec.body_and_attire.skin_texture ||
-          spec.body_and_attire.upper_body_fur ||
-          spec.body_and_attire.shell_plating ||
+          bodyAttire.skin_texture ||
+          bodyAttire.upper_body_fur ||
+          bodyAttire.shell_plating ||
           'Reactive micro-fur nap',
         color: '#10b981'
       },
@@ -921,7 +990,7 @@ export function initUI(
           coreOrWeapon.type ||
           coreOrWeapon.texture ||
           coreOrWeapon.details ||
-          spec.props ||
+          spec?.props ||
           'Subsurface emissive core',
         color: '#f59e0b'
       }
@@ -990,6 +1059,15 @@ export function initUI(
     panelSubEl.textContent = spec.role;
     actionHeroText.textContent = `Trigger: ${spec.actionName} (Space)`;
 
+    const headerCharBadge = document.getElementById('header-char-badge');
+    if (headerCharBadge) {
+      headerCharBadge.textContent = spec.name;
+    }
+    const headerActionLabel = document.getElementById('header-action-label');
+    if (headerActionLabel) {
+      headerActionLabel.textContent = spec.actionName.split(' ')[0] || 'Action';
+    }
+
     if (charRosterHeaderName) {
       charRosterHeaderName.textContent = `${spec.name.toUpperCase()} — 3D CHARACTER TURNAROUND SHEET`;
     }
@@ -998,17 +1076,18 @@ export function initUI(
     }
     if (turnaroundFooterSpecs.length === 3) {
       const cloakInfo =
-        spec.body_and_attire.cloak?.material ||
-        spec.body_and_attire.attire?.garment ||
-        spec.body_and_attire.wings?.type ||
+        spec?.body_and_attire?.cloak?.material ||
+        spec?.body_and_attire?.cloak?.color ||
+        spec?.body_and_attire?.attire?.garment ||
+        spec?.body_and_attire?.wings?.type ||
         'Soft-Body Fabric';
-      const weaponInfo = spec.weapon
+      const weaponInfo = spec?.weapon
         ? `${spec.weapon.name} — ${spec.weapon.type}`
-        : spec.props || 'Hallownest Lore Asset';
+        : spec?.props || 'Hallownest Lore Asset';
 
-      turnaroundFooterSpecs[0].textContent = `MASK // ${spec.head_mask.material}`;
-      turnaroundFooterSpecs[1].textContent = `GROOM // ${cloakInfo}`;
-      turnaroundFooterSpecs[2].textContent = `PROP // ${weaponInfo}`;
+      turnaroundFooterSpecs[0].textContent = `Mask: ${spec?.head_mask?.material || 'Matte Carapace'}`;
+      turnaroundFooterSpecs[1].textContent = `Groom: ${cloakInfo}`;
+      turnaroundFooterSpecs[2].textContent = `Relic: ${weaponInfo}`;
     }
 
     renderAnatomyZoneCards(spec);
@@ -1034,7 +1113,7 @@ export function initUI(
   }
 
   function syncViewNavActive() {
-    const current = state.viewMode || 'turnaround';
+    const current = state.viewMode || 'three_quarter';
     viewNavUpdaters.forEach((fn) => fn(current));
     if (turnaroundOverlay) {
       turnaroundOverlay.classList.toggle('hidden', current !== 'turnaround');
@@ -1070,6 +1149,10 @@ export function initUI(
         btn.classList.toggle('active', active);
         btn.setAttribute('aria-pressed', active ? 'true' : 'false');
       });
+      if (labelActiveEnv) {
+        const p = ENVIRONMENT_PRESETS.find((e) => e.id === envId);
+        if (p) labelActiveEnv.textContent = p.name.split(' ')[0];
+      }
     },
     syncSlidersFromState() {
       Object.keys(sliderUpdaters).forEach((k) => {
@@ -1087,6 +1170,7 @@ export function initUI(
       syncToolActive();
       onChange(state);
     },
-    toggleJsonModal
+    toggleJsonModal,
+    toggleInspector
   };
 }
